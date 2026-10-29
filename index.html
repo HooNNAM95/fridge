@@ -746,15 +746,13 @@ const AI_MODEL="gemini-3.8-flash";
 function hasAI(){return !!(S.aiKey&&S.aiKey.trim());}
 async function aiCall(parts){
   if(!hasAI())throw new Error("설정에서 Gemini API 키를 먼저 넣어 주세요.");
+  const geminiParts=parts.map(p=>p.type==="image"?{inline_data:{mime_type:p.mime_type,data:p.data}}:{text:p.text});
   let r;
   try{
-    r=await fetch("https://generativelanguage.googleapis.com/v1beta/interactions",{
+    r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(AI_MODEL)}:generateContent?key=${encodeURIComponent(S.aiKey.trim())}`,{
       method:"POST",
-      headers:{
-        "content-type":"application/json",
-        "x-goog-api-key":S.aiKey.trim()
-      },
-      body:JSON.stringify({model:AI_MODEL,input:parts})
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({contents:[{parts:geminiParts}],generationConfig:{response_mime_type:"application/json"}})
     });
   }catch(e){throw new Error("AI 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.");}
   if(!r.ok){
@@ -768,10 +766,13 @@ async function aiCall(parts){
     throw new Error(msg);
   }
   const j=await r.json();
-  const steps=j.steps||[];
-  const out=steps.find(s=>s.type==="model_output");
-  const tp=out&&(out.content||[]).find(c=>c.type==="text");
-  const txt=(tp&&tp.text)||"";
+  const cand=(j.candidates||[])[0];
+  const cparts=(cand&&cand.content&&cand.content.parts)||[];
+  const txt=cparts.map(p=>p.text||"").join("");
+  if(!txt){
+    const fr=cand&&cand.finishReason;
+    throw new Error(fr?`AI가 응답을 만들지 못했어요 (${fr}). 다시 시도해 주세요.`:"AI 응답을 이해하지 못했어요. 다시 시도해 주세요.");
+  }
   try{return JSON.parse(txt);}catch(e){
     const m=txt.match(/\{[\s\S]*\}/);
     if(m){try{return JSON.parse(m[0]);}catch(e2){}}
