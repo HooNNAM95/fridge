@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>우리집 냉장고</title>
+<meta name="theme-color" content="#1f6f6a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="우리집 냉장고">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 레이아웃: 상단 바(동기화 상태·설정) → 탭별 화면 → 하단 탭 바(홈/냉장고/식단/장보기/메모) */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --line:#dbe3e3; --fg:#1d2a2c; --muted:#61716f;
+  --accent:#1f6f6a; --accent-soft:#e1efed; --on-accent:#ffffff;
+  --cold:#2f6fb0; --frozen:#5b5fc7; --room:#a06a1e;
+  --bad:#c0392b; --bad-soft:#fbe7e4; --warn:#b7791f; --warn-soft:#fbf0dc;
+  --soon:#4f7a2a; --soon-soft:#e8f1dd; --none:#8a9593; --none-soft:#eef1f1;
+  --memo:#fff8e6; --memo-line:#f0e2b8;
+  --w1:#1f6f6a; --w2:#e3a64b; --w3:#2f6fb0; --w4:#c9614a; --w5:#5b5fc7; --w6:#6f9a3c;
+  --shadow:0 10px 30px rgba(20,40,40,.18);
+  --f-display:"Do Hyeon","IBM Plex Sans KR",sans-serif;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --nav-h:62px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121a1b; --surface:#1a2425; --line:#2b3a3b; --fg:#e4ecea; --muted:#93a4a1;
+  --accent:#5cc1b8; --accent-soft:#1e3634; --on-accent:#0e1818;
+  --cold:#7fb2e8; --frozen:#9ea2f2; --room:#dcaa5e;
+  --bad:#f08a7c; --bad-soft:#3a2220; --warn:#e8b45c; --warn-soft:#382d1a;
+  --soon:#a3cf7a; --soon-soft:#243120; --none:#7f8c8a; --none-soft:#222d2e;
+  --memo:#2b2818; --memo-line:#423c22;
+  --w1:#3f9c94; --w2:#c98f3a; --w3:#4f86c4; --w4:#c46a54; --w5:#7276d6; --w6:#7fa84c;
+  --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121a1b; --surface:#1a2425; --line:#2b3a3b; --fg:#e4ecea; --muted:#93a4a1;
+  --accent:#5cc1b8; --accent-soft:#1e3634; --on-accent:#0e1818;
+  --cold:#7fb2e8; --frozen:#9ea2f2; --room:#dcaa5e;
+  --bad:#f08a7c; --bad-soft:#3a2220; --warn:#e8b45c; --warn-soft:#382d1a;
+  --soon:#a3cf7a; --soon-soft:#243120; --none:#7f8c8a; --none-soft:#222d2e;
+  --memo:#2b2818; --memo-line:#423c22;
+  --w1:#3f9c94; --w2:#c98f3a; --w3:#4f86c4; --w4:#c46a54; --w5:#7276d6; --w6:#7fa84c;
+  --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+
+/* 상단 바 */
+.appbar{display:flex;align-items:center;gap:10px}
+.avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;flex:none}
+.appbar h1{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0;line-height:1.1;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--none)}
+.sync.ok i{background:var(--soon)} .sync.saving i{background:var(--warn)} .sync.error i{background:var(--bad)}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;flex:none}
+.iconbtn svg{width:20px;height:20px}
+
+/* 공통 */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{padding:4px 10px;font-size:13px;white-space:nowrap}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px}
+textarea.input{resize:vertical;min-height:80px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h2{font-size:16px;margin:0;font-weight:600}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.link{border:0;background:none;color:var(--accent);font-weight:500;cursor:pointer;padding:0;font-size:13px}
+.notice{background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:10px 14px;font-size:14px}
+.notice.err{background:var(--bad-soft);color:var(--bad)}
+.page-title{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0}
+.head-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:14px}
+
+/* 홈 */
+.dinner{background:var(--accent);color:var(--on-accent);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.dinner .lbl{font-size:13px;opacity:.85}
+.dinner .menu{font-family:var(--f-display);font-size:30px;line-height:1.15;overflow-wrap:anywhere}
+.dinner .menu.none{opacity:.7;font-size:22px}
+.dinner .row{display:flex;gap:8px;flex-wrap:wrap}
+.dinner .btn{background:transparent;border-color:currentColor;color:inherit}
+.dinner .by{font-size:12px;opacity:.8}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mini-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;align-items:center}
+.mini-row:first-of-type{border-top:0}
+.mini-row .n{min-width:0;overflow-wrap:anywhere}
+.week-mini{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wd{background:var(--bg);border-radius:8px;padding:6px 4px;text-align:center;font-size:12px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.wd b{font-weight:600;color:var(--muted)}
+.wd.today{background:var(--accent-soft)} .wd.today b{color:var(--accent)}
+.wd span{overflow-wrap:anywhere;line-height:1.3}
+
+/* 냉장고 */
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;cursor:pointer;text-align:left}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-family:var(--f-display);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat.bad .v{color:var(--bad)} .stat.warn .v{color:var(--warn)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.controls{display:flex;flex-direction:column;gap:10px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding-block:8px;z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--muted);font-weight:500;font-size:14px;padding:7px 2px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.tabs .n{font-family:var(--f-mono);font-size:11px;opacity:.75;margin-left:3px}
+.row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#q{flex:1 1 200px;min-width:0;width:auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.chip.off{opacity:.45;text-decoration:line-through}
+.sort{font-size:13px;color:var(--muted);display:flex;gap:2px;align-items:center}
+.sort button{border:0;background:none;color:var(--muted);cursor:pointer;padding:4px 6px;border-radius:6px}
+.sort button[aria-pressed="true"]{color:var(--fg);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{display:grid;grid-template-columns:4px 1fr auto;gap:0 12px;align-items:center;padding:11px 14px 11px 0;border:0;border-top:1px solid var(--line);cursor:pointer;background:none;text-align:left;width:100%}
+.item:first-child{border-top:0}
+.item:hover{background:var(--bg)}
+.stripe{align-self:stretch;margin-block:-11px;background:var(--s)}
+.main{min-width:0;display:flex;flex-direction:column;gap:3px}
+.name{font-weight:500;overflow-wrap:anywhere}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+.cat{background:var(--none-soft);padding:1px 8px;border-radius:4px;color:var(--fg)}
+.zone{font-weight:600}
+.z-냉장{color:var(--cold)} .z-냉동{color:var(--frozen)} .z-상온{color:var(--room)} .z-미정{color:var(--bad)}
+.tag{border:1px solid var(--line);padding:0 7px;border-radius:4px}
+.note{overflow-wrap:anywhere}
+.right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right}
+.date{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge{font-weight:600;font-size:12px;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--bs);color:var(--s)}
+.est{font-size:11px;color:var(--muted)}
+
+/* 식단 */
+.wheel-box{display:flex;flex-direction:column;align-items:center;gap:12px}
+.wheel-wrap{position:relative;width:min(320px,100%);aspect-ratio:1;max-width:100%}
+.wheel-wrap canvas{width:100%;height:100%;display:block}
+.pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:24px solid var(--fg);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.hub{position:absolute;inset:0;margin:auto;width:76px;height:76px;border-radius:50%;background:var(--surface);border:3px solid var(--fg);display:grid;place-items:center;font-family:var(--f-display);font-size:20px;cursor:pointer;color:var(--fg)}
+.result{width:100%;background:var(--accent-soft);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.result .dish{font-family:var(--f-display);font-size:28px;color:var(--accent);line-height:1.15}
+.result .ing{font-size:13px;color:var(--muted)}
+.result .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.seg label{flex:1;text-align:center;padding:7px 6px;cursor:pointer;border-left:1px solid var(--line);font-weight:500;font-size:14px;position:relative}
+.seg label:first-child{border-left:0}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--accent);color:var(--on-accent)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.week-nav{display:flex;align-items:center;gap:8px}
+.week-nav span{flex:1;text-align:center;font-weight:600}
+.day{display:grid;grid-template-columns:64px 1fr;gap:8px 10px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.day:first-of-type{border-top:0}
+.day .dl{display:flex;flex-direction:column;line-height:1.2}
+.day .dl b{font-size:15px}
+.day .dl small{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.day.today .dl b{color:var(--accent)}
+.day .slots{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0}
+.slot{position:relative;min-width:0}
+.slot span{position:absolute;left:9px;top:-7px;font-size:11px;background:var(--surface);padding:0 4px;color:var(--muted)}
+.slot input{padding:9px 10px 7px}
+.dish-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line)}
+.dish-row:first-of-type{border-top:0}
+.dish-row .n{min-width:0;overflow-wrap:anywhere}
+.dish-row small{color:var(--muted)}
+.ok-dot{color:var(--soon);font-weight:600;font-size:12px;white-space:nowrap}
+
+/* 밥상 기록 */
+.stars{display:flex;gap:4px}
+.star-btn{border:0;background:none;cursor:pointer;padding:2px;color:var(--line)}
+.star-btn svg{width:28px;height:28px;display:block}
+.star-btn.on{color:#e3a64b}
+.rating{color:#e3a64b;letter-spacing:1px;font-size:14px;white-space:nowrap}
+.rating.muted{color:var(--muted)}
+.log-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.log-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;text-align:left;cursor:pointer;display:flex;flex-direction:column;min-width:0;padding:0}
+.log-card .thumb{aspect-ratio:4/3;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted)}
+.log-card .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.log-card .thumb svg{width:26px;height:26px}
+.log-card .body{padding:9px 11px;display:flex;flex-direction:column;gap:4px}
+.log-card .dish{font-weight:600;overflow-wrap:anywhere;font-size:14px}
+.log-card .sub{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;align-items:center}
+.log-card .note{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.photo-pick .box{position:relative;border:1px dashed var(--line);border-radius:12px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg);cursor:pointer;width:100%;padding:0}
+.photo-pick .box img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-pick .box .ph{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.photo-pick .box .ph svg{width:26px;height:26px}
+.photo-pick .rm{position:absolute;top:6px;right:6px;background:rgba(10,20,20,.55);color:#fff;border:0;border-radius:999px;width:28px;height:28px;cursor:pointer;font-size:16px;line-height:1}
+.mini-row.photo{justify-content:flex-start}
+.thumb-sm{width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none;background:var(--bg)}
+
+/* 장보기 */
+.shop-add{display:flex;gap:8px}
+.shop-add .input{flex:1;min-width:0}
+.srow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.srow:first-child{border-top:0}
+.srow label{flex:1;min-width:0;display:flex;gap:10px;align-items:center;cursor:pointer;overflow-wrap:anywhere}
+.srow input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.srow.done label span{text-decoration:line-through;color:var(--muted)}
+.srow .sub{font-size:12px;color:var(--muted)}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:20px;padding:2px 6px;line-height:1}
+
+/* 메모 */
+.memos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.memo{background:var(--memo);border:1px solid var(--memo-line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.memo .txt{white-space:pre-wrap;overflow-wrap:anywhere}
+.memo .foot{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.memo .acts{display:flex;gap:2px}
+.memo .acts button{border:0;background:none;color:var(--muted);cursor:pointer;padding:4px 6px;border-radius:6px;font-size:12px}
+.memo .acts button:hover{background:var(--surface)}
+.memo.pinned{border-color:var(--warn)}
+.pin{color:var(--warn);font-weight:600}
+
+/* 하단 탭 */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.nav-in{max-width:880px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);height:var(--nav-h)}
+.nav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--muted);cursor:pointer;position:relative}
+.nav svg{width:22px;height:22px}
+.nav button[aria-current="page"]{color:var(--accent);font-weight:600}
+.nav .cnt{position:absolute;top:6px;left:calc(50% + 6px);background:var(--bad);color:#fff;border-radius:999px;font-size:10px;padding:0 5px;min-width:16px;line-height:16px;font-weight:600}
+
+/* 다이얼로그 */
+dialog{border:0;border-radius:16px;padding:0;background:var(--surface);color:var(--fg);box-shadow:var(--shadow);width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px)}
+dialog::backdrop{background:rgba(10,20,20,.45)}
+.dlg{display:flex;flex-direction:column;gap:14px;padding:18px;overflow:auto;max-height:calc(100dvh - 24px)}
+.dlg h2{margin:0;font-family:var(--f-display);font-weight:400;font-size:24px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field > span{font-size:13px;color:var(--muted);font-weight:500}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dlg-foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+.dlg-foot .grp{display:flex;gap:8px;flex-wrap:wrap}
+.used-box{display:flex;flex-direction:column;gap:8px;background:var(--bg);border-radius:10px;padding:12px}
+.section-label{font-size:13px;font-weight:600;color:var(--muted);margin:4px 0 -6px}
+.code{font-family:var(--f-mono);font-size:12px;word-break:break-all}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);border-radius:10px;padding:10px 14px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:50;max-width:calc(100vw - 32px);font-size:14px}
+.toast button{white-space:nowrap;border:0;background:none;color:var(--bg);font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
+
+@media (max-width:620px){
+  .summary{grid-template-columns:repeat(6,1fr)}.summary .stat{grid-column:span 2}.summary .stat:nth-child(-n+2){grid-column:span 3}
+  .home-grid{grid-template-columns:1fr}
+  .memos{grid-template-columns:1fr}
+  .log-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:480px){
+  .stat .v{font-size:22px}
+  .appbar h1{font-size:22px}
+  .tabs button{font-size:13px}
+  .grid2{grid-template-columns:1fr}
+  .day{grid-template-columns:48px 1fr}
+  .wd{font-size:11px;padding:5px 2px}
+  dialog{width:100vw;max-width:100vw;margin:auto 0 0;border-radius:16px 16px 0 0}
+  .dlg{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:no-preference){.item{transition:background .15s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="appbar">
+    <img class="avatar" src="icon-192.png" alt="">
+    <h1>우리집 냉장고</h1>
+    <button class="sync" id="sync-pill" type="button"><i></i><span id="sync-text">이 기기만</span></button>
+    <button class="iconbtn" id="btn-settings" type="button" aria-label="설정">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <!-- 홈 -->
+  <main id="v-home" class="wrap" style="gap:14px">
+    <section class="dinner">
+      <span class="lbl" id="home-date"></span>
+      <span class="menu" id="home-dinner"></span>
+      <span class="by" id="home-dinner-by"></span>
+      <div class="row">
+        <button class="btn small" type="button" id="home-write">저녁 메뉴 쓰기</button>
+        <button class="btn small" type="button" id="home-roulette">룰렛으로 정하기</button>
+        <button class="btn small" type="button" id="home-log">오늘 밥상 기록</button>
+      </div>
+    </section>
+    <div class="home-grid">
+      <section class="panel">
+        <div class="panel-head"><h2>먼저 먹어야 할 것</h2><button class="link" type="button" data-goto="fridge">냉장고 보기</button></div>
+        <div id="home-soon"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>장보기</h2><button class="link" type="button" data-goto="shop">전체 보기</button></div>
+        <div id="home-shop"></div>
+      </section>
+    </div>
+    <section class="panel">
+      <div class="panel-head"><h2>이번 주 저녁</h2><button class="link" type="button" data-goto="plan">식단 짜기</button></div>
+      <div class="week-mini" id="home-week"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>최근 밥상</h2><button class="link" type="button" data-goto="log">밥상 기록 전체</button></div>
+      <div id="home-log-list"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>최근 메모</h2><button class="link" type="button" data-goto="memo">메모 전체</button></div>
+      <div id="home-memo"></div>
+    </section>
+  </main>
+
+  <!-- 냉장고 -->
+  <main id="v-fridge" class="wrap" hidden>
+    <div class="head-row"><h2 class="page-title">냉장고</h2><button class="btn primary" id="btn-add" type="button">+ 품목 추가</button></div>
+    <section class="summary" id="summary" aria-label="요약"></section>
+    <div class="controls">
+      <div class="tabs" id="ztabs" role="group" aria-label="보관 구역"></div>
+      <div class="row2">
+        <input id="q" class="input" type="search" placeholder="품목명·분류·메모 검색" aria-label="검색">
+        <div class="sort" id="fridge-sort">
+          <button data-s="date" type="button">기한순</button>
+          <button data-s="name" type="button">이름순</button>
+          <button data-s="added" type="button">최근 추가순</button>
+        </div>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="소비기한 상태"></div>
+    </div>
+    <div class="list" id="list" aria-live="polite"></div>
+  </main>
+
+  <!-- 식단 -->
+  <main id="v-plan" class="wrap" hidden>
+    <h2 class="page-title">식단</h2>
+    <section class="panel" id="roulette">
+      <div class="panel-head"><h2>오늘 뭐 먹지? 룰렛</h2></div>
+      <div class="seg" role="radiogroup" aria-label="후보">
+        <label><input type="radio" name="rmode" value="fridge" id="rm-1" checked>냉장고 재료로</label>
+        <label><input type="radio" name="rmode" value="all" id="rm-2">모든 메뉴</label>
+        <label><input type="radio" name="rmode" value="week" id="rm-3">이번 주 식단</label>
+      </div>
+      <label class="check"><input type="checkbox" id="r-urgent" checked>기한 임박 재료 메뉴가 더 잘 나오게</label>
+      <details><summary class="link" style="list-style:none;cursor:pointer">후보 고르기 <span id="r-cnt"></span></summary>
+        <p class="hint" style="margin:8px 0">누르면 룰렛에서 빼거나 다시 넣어요.</p>
+        <div class="chips" id="r-cands"></div>
+      </details>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><p class="hint" id="r-hint"></p><button class="btn small" type="button" id="r-shuffle" hidden>다른 후보로 섞기</button></div>
+      <div class="wheel-box">
+        <div class="wheel-wrap">
+          <canvas id="wheel" width="640" height="640" aria-label="메뉴 룰렛"></canvas>
+          <div class="pointer"></div>
+          <button class="hub" id="spin" type="button">돌리기</button>
+        </div>
+        <div class="result" id="r-result" hidden>
+          <span class="dish" id="r-dish"></span>
+          <span class="ing" id="r-ing"></span>
+          <div class="row">
+            <select class="input" id="r-day" style="width:auto;flex:1;min-width:0" aria-label="날짜"></select>
+            <button class="btn primary" type="button" id="r-save">저녁으로 정하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="week-nav">
+        <button class="btn small" type="button" id="wk-prev" aria-label="지난주">‹ 지난주</button>
+        <span id="wk-label"></span>
+        <button class="btn small" type="button" id="wk-next" aria-label="다음 주">다음 주 ›</button>
+      </div>
+      <div id="week"></div>
+      <p class="hint">칸에 쓰고 다른 곳을 누르면 저장돼요.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>우리 메뉴 목록</h2><span class="hint" id="dish-count"></span></div>
+      <p class="hint">룰렛 후보가 되는 메뉴예요. 주재료를 적어 두면 냉장고에 그 재료가 있을 때 ‘냉장고 재료로’ 후보에 들어갑니다. 재료가 여러 개면 쉼표로, 둘 중 하나면 /로 적어요.</p>
+      <form class="grid2" id="dish-form" style="grid-template-columns:1fr 1fr auto;align-items:end">
+        <label class="field"><span>메뉴</span><input class="input" id="dish-name" placeholder="예: 제육볶음" autocomplete="off"></label>
+        <label class="field"><span>주재료</span><input class="input" id="dish-keys" placeholder="예: 돼지고기, 고추장" autocomplete="off"></label>
+        <button class="btn primary" type="submit">추가</button>
+      </form>
+      <div id="dish-list"></div>
+    </section>
+  </main>
+
+  <!-- 밥상 기록 -->
+  <main id="v-log" class="wrap" hidden>
+    <div class="head-row"><h2 class="page-title">밥상 기록</h2><button class="btn primary" id="btn-log-add" type="button">+ 기록 추가</button></div>
+    <p class="hint notice" id="log-photo-hint" hidden>사진은 GitHub를 연결해야 배우자와 같이 볼 수 있어요. 연결 전에는 이 기기에만 저장돼요.</p>
+    <div class="sort" id="log-sort">
+      <button data-s="date" type="button">최신순</button>
+      <button data-s="rating" type="button">별점순</button>
+    </div>
+    <div class="log-grid" id="log-grid"></div>
+  </main>
+
+  <!-- 장보기 -->
+  <main id="v-shop" class="wrap" hidden>
+    <h2 class="page-title">장보기</h2>
+    <section class="panel">
+      <form class="shop-add" id="shop-form">
+        <input class="input" id="shop-input" placeholder="살 것 입력 (예: 계란 30구)" aria-label="장보기 항목" autocomplete="off">
+        <button class="btn primary" type="submit">추가</button>
+      </form>
+      <div id="shop-list"></div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn small" id="shop-clear" type="button">산 항목 지우기</button></div>
+    </section>
+    <section class="panel">
+      <h2>다 먹은 품목</h2>
+      <p class="hint">실수로 처리했다면 되돌리기로 냉장고 목록에 다시 넣을 수 있어요.</p>
+      <div id="used-list"></div>
+    </section>
+  </main>
+
+  <!-- 메모 -->
+  <main id="v-memo" class="wrap" hidden>
+    <h2 class="page-title">메모</h2>
+    <section class="panel">
+      <form id="memo-form" style="display:flex;flex-direction:column;gap:8px">
+        <textarea class="input" id="memo-input" placeholder="같이 볼 메모를 적어요 (예: 주말에 장모님 오심, 고기 사기)" aria-label="새 메모"></textarea>
+        <div style="display:flex;justify-content:flex-end"><button class="btn primary" type="submit">메모 추가</button></div>
+      </form>
+    </section>
+    <div class="memos" id="memo-list"></div>
+  </main>
+</div>
+
+<nav class="nav" aria-label="메뉴"><div class="nav-in" id="nav">
+  <button type="button" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>홈</button>
+  <button type="button" data-v="fridge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M9 6v2M9 13v3"/></svg>냉장고<span class="cnt" id="nav-bad" hidden></span></button>
+  <button type="button" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4M12 12 5.6 18.4"/></svg>식단</button>
+  <button type="button" data-v="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>밥상</button>
+  <button type="button" data-v="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 7H6"/></svg>장보기<span class="cnt" id="nav-shop" hidden></span></button>
+  <button type="button" data-v="memo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12l-4 4H4z"/><path d="M16 20v-4h4M8 9h8M8 13h5"/></svg>메모</button>
+</div></nav>
+
+<!-- 품목 -->
+<dialog id="dlg-item">
+  <form class="dlg" id="item-form">
+    <h2 id="item-title">품목 추가</h2>
+    <label class="field"><span>품목명</span><input class="input" id="f-name" required autocomplete="off"></label>
+    <div class="grid2">
+      <label class="field"><span>분류</span><input class="input" id="f-cat" list="cat-list" autocomplete="off" placeholder="예: 소스, 장류(된장)"></label>
+      <label class="field"><span>수량·남은 양</span><input class="input" id="f-qty" autocomplete="off" placeholder="예: 2개 남음, 반 병"></label>
+    </div>
+    <datalist id="cat-list"></datalist>
+    <div class="field"><span>보관방법</span>
+      <div class="seg" role="radiogroup" aria-label="보관방법">
+        <label><input type="radio" name="zone" value="냉장" id="z-1">냉장</label>
+        <label><input type="radio" name="zone" value="냉동" id="z-2">냉동</label>
+        <label><input type="radio" name="zone" value="상온" id="z-3">상온</label>
+      </div>
+    </div>
+    <div class="grid2">
+      <label class="field"><span>소비기한</span><input class="input" type="date" id="f-exp"></label>
+      <label class="field"><span>개봉일</span><input class="input" type="date" id="f-opened"></label>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <label class="check"><input type="checkbox" id="f-noexp">소비기한 모름</label>
+      <label class="check"><input type="checkbox" id="f-est">날짜 추정(확인 필요)</label>
+    </div>
+    <label class="field"><span>메모</span><input class="input" id="f-note" autocomplete="off" placeholder="각인 정보, 제조일 등"></label>
+    <div class="used-box" id="used-box" hidden>
+      <label class="check"><input type="checkbox" id="f-toshop" checked>다 먹으면 장보기 목록에 추가</label>
+      <button class="btn" type="button" id="btn-used">다 먹음</button>
+    </div>
+    <div class="dlg-foot">
+      <div class="grp"><button class="btn danger" type="button" id="btn-del" hidden>삭제</button></div>
+      <div class="grp"><button class="btn" type="button" data-close>취소</button><button class="btn primary" type="submit">저장</button></div>
+    </div>
+  </form>
+</dialog>
+
+<!-- 메모 수정 -->
+<dialog id="dlg-memo">
+  <form class="dlg" id="memo-edit-form">
+    <h2>메모 수정</h2>
+    <textarea class="input" id="memo-edit" rows="6" aria-label="메모 내용"></textarea>
+    <div class="dlg-foot"><span></span><div class="grp"><button class="btn" type="button" data-close>취소</button><button class="btn primary" type="submit">저장</button></div></div>
+  </form>
+</dialog>
+
+<!-- 저녁 메뉴 쓰기 -->
+<dialog id="dlg-dinner">
+  <form class="dlg" id="dinner-form">
+    <h2>오늘 저녁 메뉴</h2>
+    <input class="input" id="dinner-input" placeholder="예: 된장찌개, 계란말이" autocomplete="off" aria-label="오늘 저녁 메뉴">
+    <div class="dlg-foot"><span></span><div class="grp"><button class="btn" type="button" data-close>취소</button><button class="btn primary" type="submit">저장</button></div></div>
+  </form>
+</dialog>
+
+<!-- 밥상 기록 -->
+<dialog id="dlg-log">
+  <form class="dlg" id="log-form">
+    <h2 id="log-title">밥상 기록</h2>
+    <div class="photo-pick">
+      <div class="box" id="log-photo-box" role="button" tabindex="0" aria-label="사진 선택">
+        <img id="log-photo-img" hidden alt="">
+        <span class="ph" id="log-photo-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>사진 추가</span>
+        <button type="button" class="rm" id="log-photo-rm" hidden aria-label="사진 지우기">×</button>
+      </div>
+      <input type="file" id="log-photo-input" accept="image/*" hidden>
+    </div>
+    <div class="grid2">
+      <label class="field"><span>날짜</span><input class="input" type="date" id="log-date"></label>
+      <label class="field"><span>메뉴</span><input class="input" id="log-dish" list="dish-namelist" autocomplete="off" placeholder="예: 된장찌개"></label>
+    </div>
+    <datalist id="dish-namelist"></datalist>
+    <div class="field"><span>맛 평가</span><div class="stars" id="log-stars" role="radiogroup" aria-label="별점"></div></div>
+    <label class="field"><span>레시피</span><textarea class="input" id="log-recipe" rows="4" placeholder="만든 방법을 적어 두면 다음에 또 볼 수 있어요"></textarea></label>
+    <label class="field"><span>한줄평·메모</span><input class="input" id="log-note" autocomplete="off" placeholder="예: 다음엔 덜 짜게"></label>
+    <div class="dlg-foot">
+      <div class="grp"><button class="btn danger" type="button" id="log-del" hidden>삭제</button></div>
+      <div class="grp"><button class="btn" type="button" data-close>취소</button><button class="btn primary" type="submit">저장</button></div>
+    </div>
+  </form>
+</dialog>
+
+<!-- 설정 -->
+<dialog id="dlg-settings">
+  <form class="dlg" id="settings-form">
+    <h2>같이 쓰기 설정</h2>
+    <p class="hint" id="set-status"></p>
+    <label class="field"><span>내 이름 (메모·식단에 표시)</span><input class="input" id="s-name" placeholder="예: 남훈" autocomplete="off"></label>
+    <p class="section-label">GitHub 저장소 연결</p>
+    <div class="grid2">
+      <label class="field"><span>GitHub 아이디</span><input class="input" id="s-owner" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label class="field"><span>데이터 저장소 이름</span><input class="input" id="s-repo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    </div>
+    <label class="field"><span>접근 토큰</span><input class="input" id="s-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_로 시작"></label>
+    <div class="grp" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" type="submit">연결하고 저장</button>
+      <button class="btn" type="button" id="s-disconnect">연결 끊기</button>
+    </div>
+    <p class="section-label">배우자 폰 연결</p>
+    <p class="hint">아래 연결 코드를 복사해 배우자에게 보내고, 배우자 폰에서 ‘연결 코드 붙여넣기’에 넣으면 같은 목록을 보게 돼요. 코드에는 토큰이 들어 있으니 둘만 보는 대화방에만 보내세요.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" type="button" id="s-copy">연결 코드 복사</button>
+    </div>
+    <textarea class="input code" id="s-code-out" rows="3" readonly hidden aria-label="연결 코드"></textarea>
+    <label class="field"><span>연결 코드 붙여넣기</span><textarea class="input code" id="s-code-in" rows="3" placeholder="FRIDGE1:로 시작하는 코드"></textarea></label>
+    <button class="btn" type="button" id="s-apply">코드로 연결</button>
+    <p class="section-label">백업</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" type="button" id="s-export">백업 파일 저장</button>
+      <button class="btn" type="button" id="s-import">백업·예전 파일 불러오기</button>
+    </div>
+    <div class="dlg-foot"><span></span><button class="btn" type="button" data-close>닫기</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-confirm">
+  <div class="dlg">
+    <h2 id="cf-title"></h2>
+    <p id="cf-body" style="margin:0"></p>
+    <div class="dlg-foot"><span></span><div class="grp"><button class="btn" type="button" id="cf-no">취소</button><button class="btn primary" type="button" id="cf-yes">확인</button></div></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" hidden><span id="toast-msg"></span><button type="button" id="toast-undo">되돌리기</button></div>
+<input type="file" id="import-file" accept=".html,.htm,.json,text/html,application/json" hidden>
+
+<script id="seed" type="application/json">{"savedAt": "2026-10-29T01:50:00.000Z", "items": [{"id": "s1", "name": "쌀(소분 보관, 파란 뚜껑 용기 2통)", "cat": "곡류", "zone": "냉장", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s2", "name": "자연드림 야미야미 횡성맑은 손질황태채(골드) 100g", "cat": "건어물", "zone": "냉장", "exp": "2027-07-02", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s3", "name": "송학식품 고춧가루 250g(국산 100%)", "cat": "양념·가루류", "zone": "냉장", "exp": "2026-05-12", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s4", "name": "춤맛 호두 430g(미국산)", "cat": "견과류", "zone": "냉장", "exp": "2027-03-28", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s5", "name": "고춧가루(투명 용기 소분, 라벨 없음)", "cat": "양념·가루류", "zone": "냉장", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s6", "name": "샘표 매콤 쌈토장 450g", "cat": "장류(쌈장)", "zone": "냉장", "exp": "2026-12-10", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s7", "name": "simplus 저당 경양식 돈까스 소스 280g", "cat": "소스", "zone": "냉장", "exp": "2026-10-15", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s8", "name": "No Brand 데일리 오리엔탈 드레싱 420g", "cat": "드레싱", "zone": "냉장", "exp": "2026-06-13", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s9", "name": "simplus 저당 양념치킨 소스 310g", "cat": "소스", "zone": "냉장", "exp": "2026-11-23", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s10", "name": "청정원 순창 고추장(100% 국산)", "cat": "장류(고추장)", "zone": "냉장", "exp": "2026-06-02", "note": "제조 2024.12.03", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s11", "name": "CJ 해찬들 새콤달콤 초고추장 170g", "cat": "소스(초장)", "zone": "냉장", "exp": "2025-10-17", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s12", "name": "자연드림 야미야미 메주로 빚은 된장 900g", "cat": "장류(된장)", "zone": "냉장", "exp": "2027-04-19", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s13", "name": "백설 다담 우렁강된장 양념 500g", "cat": "장류·조리양념", "zone": "냉장", "exp": "2026-11-06", "note": "제조 2026.02.07", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s14", "name": "CJ 해찬들 맛있는 재래식 된장 500g", "cat": "장류(된장)", "zone": "냉장", "exp": "2027-02-10", "note": "제조 2025.11.11", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s15", "name": "Coop Vivi Verde Bio 유기농 비건 바질페스토 190g", "cat": "소스(페스토)", "zone": "냉장", "exp": "2026-11-07", "note": "뚜껑 표기 일/월/년", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s16", "name": "사군자 들깨가루 200g(HANIL food system)", "cat": "양념·가루류", "zone": "냉장", "exp": "2027-06-09", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s17", "name": "T Standard 100% 땅콩버터 크런치 793g", "cat": "잼·스프레드", "zone": "냉장", "exp": "2027-05-28", "note": "제조 2025.05.28", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s18", "name": "청정원 순창 양념듬뿍 쌈장 500g", "cat": "장류(쌈장)", "zone": "냉장", "exp": "2026-12-17", "note": "제조 2025.12.18", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s19", "name": "팜밀리 양배추 릴렉스 주스 70ml (약 10포)", "cat": "건강음료(즙)", "zone": "냉장", "exp": "2027-03-10", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s20", "name": "도라지배즙 110ml (여러 포)", "cat": "건강음료(즙)", "zone": "냉장", "exp": "2027-01-22", "note": "각인이 흐려 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s21", "name": "한살림 유정란 10개입 (2개 남음)", "cat": "계란", "zone": "냉장", "exp": "2026-10-28", "note": "산란일 2026.09.30 + 28일", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s22", "name": "오뚜기 향긋한 들기름 160ml", "cat": "식용유(기름류)", "zone": "냉장", "exp": "2025-11-06", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s23", "name": "청정원 햇살담은 조림간장 500ml", "cat": "장류(간장)", "zone": "냉장", "exp": "2027-12-17", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s24", "name": "청정원 우리쌀 요리주 맛술 410ml", "cat": "조미료(맛술)", "zone": "냉장", "exp": "2027-03-03", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s25", "name": "자연드림 맛간장(양조간장) 500ml", "cat": "장류(간장)", "zone": "냉장", "exp": "2026-08-29", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s26", "name": "백설 해물 굴소스 500g", "cat": "소스(굴소스)", "zone": "냉장", "exp": "2026-05-01", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s27", "name": "동원 해물 참치액 500g", "cat": "액젓·조미액(참치액)", "zone": "냉장", "exp": "2026-10-14", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s28", "name": "모리타 사시미타마리 본양조 1.8L (일본 간장)", "cat": "장류(간장)", "zone": "냉장", "exp": "2027-04-13", "note": "개봉 전 기준", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s29", "name": "청정원 쉐프의 치킨스톡 340g", "cat": "육수·스톡", "zone": "냉장", "exp": "2026-04-01", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s30", "name": "동원 참치액 진 500g", "cat": "액젓·조미액(참치액)", "zone": "냉장", "exp": "2026-09-25", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s31", "name": "청정원 햇살담은 양조간장 씨간장 숙성공법 500ml", "cat": "장류(간장)", "zone": "냉장", "exp": "2027-06-02", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s32", "name": "味プラス 요리용 청주(料理用清酒, Cooking Sake) 1L", "cat": "조미료(청주)", "zone": "냉장", "exp": "2027-06-17", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s33", "name": "초야식품 담울 카라멜 180ml (카라멜색소)", "cat": "식품첨가물·색소", "zone": "냉장", "exp": "2028-03-02", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s34", "name": "서울우유 연유 500g", "cat": "유제품·조리재료(연유)", "zone": "냉장", "exp": "2026-12-17", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s35", "name": "타카라 순미 혼미림(宝酒造 本みりん) 600ml (일본 미림)", "cat": "조미료(미림)", "zone": "냉장", "exp": "2027-01-31", "note": "2027.01 월 표기 · 개봉 전 기준", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s36", "name": "홈플러스 시그니처 볶음깨 200g", "cat": "양념·가루류(참깨)", "zone": "냉장", "exp": "2026-07-25", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s37", "name": "후이퐁 스리라차 핫칠리소스 793g (Huy Fong)", "cat": "소스(핫소스)", "zone": "냉장", "exp": "2026-09-30", "note": "2026.09 월 표기 · BBD SEP 2026", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s38", "name": "필라델피아 오리지널 크림치즈 190g", "cat": "유제품(치즈)", "zone": "냉장", "exp": "2026-12-06", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s39", "name": "우리밀발효냉면 한우 발효 물냉면 2인분", "cat": "면류(냉면)", "zone": "냉장", "exp": "2027-01-22", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s40", "name": "자연드림 야미야미 블랙미숫가루 500g", "cat": "곡류가공품(미숫가루)", "zone": "냉장", "exp": "2027-04-15", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s41", "name": "대양푸드 볶음멸치 250g", "cat": "건어물(멸치)", "zone": "냉장", "exp": "2027-02-20", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s42", "name": "백설 칼국수면 900g", "cat": "면류(건면)", "zone": "냉장", "exp": "2027-03-09", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s43", "name": "Berni 그린올리브 씨 뺀 것(Olive Verdi Denocciolate) 290g", "cat": "절임류(올리브)", "zone": "냉장", "exp": "2027-10-31", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s44", "name": "진미채(볶음) 반찬", "cat": "반찬", "zone": "냉장", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s45", "name": "멸치볶음 반찬", "cat": "반찬", "zone": "냉장", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s46", "name": "미역줄기볶음 반찬", "cat": "반찬", "zone": "냉장", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s47", "name": "김치", "cat": "김치류", "zone": "냉장", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s48", "name": "비비드키친 저칼로리 머스터드 소스 320g (동원홈푸드)", "cat": "소스(머스터드)", "zone": "냉장", "exp": "2026-06-08", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s49", "name": "비비드키친 저칼로리 토마토케찹 320g (동원홈푸드)", "cat": "소스(케첩)", "zone": "냉장", "exp": "2025-11-24", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s50", "name": "Cannamela 유기농 시나몬 분말 42g", "cat": "향신료(시나몬)", "zone": "냉장", "exp": "2028-03-19", "note": "일·월·년 순 표기", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s51", "name": "오뚜기 딸기잼 300g", "cat": "잼·스프레드", "zone": "냉장", "exp": "2027-02-18", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s52", "name": "오뚜기 1/2 하프 마요네스", "cat": "소스(마요네즈)", "zone": "냉장", "exp": "2026-01-26", "note": "캡 각인이 흐려 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s53", "name": "다마루야 시즈오카 와사비 ざくぎり 튜브 70g", "cat": "양념(와사비)", "zone": "냉장", "exp": "2026-11-17", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s54", "name": "설빙 순연유 소스 25g (소포장)", "cat": "소스·시럽(연유)", "zone": "냉장", "exp": "2026-12-09", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s55", "name": "자연드림 야미야미 사과한모금 120ml (2팩)", "cat": "음료(주스)", "zone": "냉장", "exp": "2027-02-01", "note": "각인이 흐려 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s56", "name": "참이슬 후레쉬 360ml", "cat": "주류(소주)", "zone": "냉장", "exp": "", "note": "표기 없음 (제조일 2026.03.17)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s57", "name": "S&B 골든카레 중간매운맛 220g (12인분)", "cat": "카레", "zone": "냉장", "exp": "2027-06-22", "note": "일·월·년 순 표기", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s58", "name": "진로 하우스 와인 레드 500mL", "cat": "주류(와인)", "zone": "냉장", "exp": "", "note": "표기 없음 (제조일 2026.03.10)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s59", "name": "테일러 유기농 건자두(프룬) (소분, 약 8개입)", "cat": "건과일(건자두)", "zone": "냉장", "exp": "2027-01-13", "note": "생산 2025.01.13", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s60", "name": "자연드림 힐링푸드 클린 250ml (여러 팩)", "cat": "건강음료(과채주스)", "zone": "냉장", "exp": "2025-12-20", "note": "팩 상단 각인으로 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s61", "name": "자연드림 야미야미 바지락 된장찌개 (2팩, 콜라주 사진)", "cat": "찌개 양념·소스", "zone": "냉동", "exp": "2026-01-26", "note": "흐려서 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s62", "name": "자연드림 야미야미 고깃집 된장찌개 (3팩)", "cat": "찌개 양념·소스", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s63", "name": "자연드림 야미야미 안동식 찜닭소스", "cat": "소스(찜닭 양념)", "zone": "냉동", "exp": "2026-11-27", "note": "흐려서 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s64", "name": "자연드림 야미야미 국물떡볶이 양념", "cat": "소스(떡볶이 양념)", "zone": "냉동", "exp": "2026-02-26", "note": "흐려서 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s65", "name": "작심통밥 잡채볶음밥", "cat": "냉동 볶음밥", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s66", "name": "작심통밥 볶은다게살 (게살 볶음밥)", "cat": "냉동 볶음밥", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s67", "name": "작심통밥 볶음밥 (주황 포장, 맛 미확인)", "cat": "냉동 볶음밥", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s68", "name": "작심통밥 볶음밥 (회색 포장, 맛 미확인)", "cat": "냉동 볶음밥", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s69", "name": "개별 포장 소포장 간식 여러 개 (종류 미확인)", "cat": "간식류", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s70", "name": "소분한 녹색 냉동 채소 (브로콜리로 추정)", "cat": "냉동 채소", "zone": "냉동", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s71", "name": "초코 크림파이", "cat": "과자·빵류", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s72", "name": "노란색 4구 냉동 큐브 (육수·양념 큐브로 추정)", "cat": "조리 재료", "zone": "냉동", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s73", "name": "자연드림 야미야미 오리고추양념불고기 500g", "cat": "육류(오리)", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s74", "name": "자연드림 야미야미 오리훈제 350g", "cat": "육류(오리)", "zone": "냉동", "exp": "2026-06-30", "note": "흐려서 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s75", "name": "스모크 닭가슴살 한끼통살 왕갈비맛", "cat": "닭가슴살", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s76", "name": "자숙새우살 SMALL (프리미엄 새우)", "cat": "수산물(새우)", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s77", "name": "초코칩 쿠키 (비닐 포장)", "cat": "과자·빵류", "zone": "냉동", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s78", "name": "냉동 애플망고 1kg (Frozen Apple Mango Chunk, 수입 에프원에프앤비/판매 맥그로우앤마리)", "cat": "냉동 과일(망고)", "zone": "냉동", "exp": "2027-11-11", "note": "2027.11.11 또는 2028.11.11 (후면 각인이 흐려 확인 필요)", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s79", "name": "닭껍질튀김", "cat": "닭고기 가공품(튀김)", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s80", "name": "어부장 전복영양톳밥 (냉동 볶음밥, 2팩)", "cat": "냉동 볶음밥", "zone": "냉동", "exp": "2027-06-21", "note": "추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s81", "name": "자연드림 야미야미 군만두", "cat": "냉동 만두", "zone": "냉동", "exp": "2026-09-02", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s82", "name": "자연드림 발효 간장닭갈비 500g", "cat": "냉동 닭고기 조리식품", "zone": "냉동", "exp": "2027-09-02", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s83", "name": "빙그레 투게더 오리지널 (아이스크림)", "cat": "아이스크림", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s84", "name": "상주 곶감 (프리미엄 건시 선물세트)", "cat": "건과일(곶감)", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s85", "name": "소분 냉동 청매실 (추정)", "cat": "냉동 과일", "zone": "냉동", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s86", "name": "소분 냉동 썬 대파", "cat": "냉동 채소", "zone": "냉동", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s87", "name": "소분 냉동 레몬 등 감귤류 조각 (추정)", "cat": "냉동 과일", "zone": "냉동", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s88", "name": "올프레쉬 냉동 수산물 (종류 미확인)", "cat": "수산물", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s89", "name": "자연드림 야미야미 미니돈까스 500g", "cat": "냉동 돈까스", "zone": "냉동", "exp": "2027-05-18", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s90", "name": "자연드림 우리밀 칼국수면 600g", "cat": "면류(냉동)", "zone": "냉동", "exp": "", "note": "확인 불가 (제조일 2025.1x)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s91", "name": "자연드림 국산 참굴비(참조기)", "cat": "수산물(굴비)", "zone": "냉동", "exp": "", "note": "확인 불가 (제조일 2025.07.28)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s92", "name": "자연드림 야미야미 한우갈비탕", "cat": "냉동 국·탕", "zone": "냉동", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s93", "name": "자연드림 돈든등심돈가스 400g", "cat": "냉동 돈가스", "zone": "냉동", "exp": "2026-07-09", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s94", "name": "절단 대왕오징어(몸채) 1kg (페루산, 제이더블유푸드)", "cat": "수산물(오징어)", "zone": "냉동", "exp": "2026-06-27", "note": "제조 2025.10.01", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s95", "name": "미이랑 귀리 400g (캐나다산)", "cat": "곡류", "zone": "상온", "exp": "", "note": "소비기한 표기 없음 (포장 2025.10.17)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s96", "name": "미이랑 찰현미 400g", "cat": "곡류", "zone": "상온", "exp": "", "note": "소비기한 표기 없음 (포장 2025.10.16)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s97", "name": "통흑후추 BLACK PEPPER WHOLE 100g (베트남산)", "cat": "향신료(후추)", "zone": "상온", "exp": "", "note": "확인 불가", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s98", "name": "Basso 엑스트라 버진 올리브오일 1L", "cat": "기름류(올리브유)", "zone": "상온", "exp": "2027-10-06", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s99", "name": "백설 카놀라유 500mL", "cat": "식용유(기름류)", "zone": "상온", "exp": "2026-04-04", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s100", "name": "자연드림 참기름 420ml", "cat": "기름류(참기름)", "zone": "상온", "exp": "2027-02-09", "note": "제조 2026.02.10", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s101", "name": "프라텔리 만토바 트러플향 엑스트라 버진 올리브오일 스프레이 200ml", "cat": "기름류(올리브유)", "zone": "상온", "exp": "2027-07-09", "note": "추정, 냉장 보관 금지 표기", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s102", "name": "대상 미원 감칠맛 100g", "cat": "조미료(MSG)", "zone": "상온", "exp": "", "note": "소비기한 표기 없음 (제조 2024.12.17)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s103", "name": "청정원 햇살담은 국간장 500ml", "cat": "장류(간장)", "zone": "상온", "exp": "2027-05-08", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s104", "name": "팁파로스 타이 피쉬소스", "cat": "액젓·소스(피시소스)", "zone": "상온", "exp": "2027-07-03", "note": "일/월/년 표기", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s105", "name": "소분 용기 속 갈색 가루 (흑설탕으로 추정)", "cat": "설탕·감미료", "zone": "상온", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s106", "name": "파주양봉영농조합 벌꿀 (국산 100%)", "cat": "꿀", "zone": "상온", "exp": "2027-08-05", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s107", "name": "자른 다시마 국산 50g", "cat": "건어물·해조류(다시마)", "zone": "상온", "exp": "2026-06-30", "note": "유통기한", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s108", "name": "삼보국제식품 오향분말(五香粉 Five spices powder) 30g (중국 山东庞大食品)", "cat": "향신료(혼합향신료)", "zone": "상온", "exp": "2027-12-04", "note": "제조 2025.12.04 + 24개월, 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s109", "name": "자연드림 압착 유채유 900ml (호주산 유채씨 100%)", "cat": "식용유(카놀라유)", "zone": "상온", "exp": "2027-09-21", "note": "제조 2025.09.22", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s110", "name": "자연드림 순수 엑스트라 버진 올리브오일 420ml (아르헨티나, 공정무역)", "cat": "기름류(올리브유)", "zone": "상온", "exp": "2027-03-07", "note": "제조 2025.03.07", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s111", "name": "오뚜기 현미식초 900ml", "cat": "식초", "zone": "상온", "exp": "2028-07-08", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s112", "name": "오뚜기 옛날 볶음참깨 100g", "cat": "양념·가루류(참깨)", "zone": "상온", "exp": "2026-04-16", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s113", "name": "말돈 소금(Maldon Sea Salt Flakes) 570g (영국)", "cat": "소금(플레이크 천일염)", "zone": "상온", "exp": "2030-10-03", "note": "BBE 03/10/2030, 일/월/년 순", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s114", "name": "Collitali Tartufo Elisir 트러플 엑스트라 버진 올리브오일 드레싱 (이탈리아)", "cat": "기름류(트러플오일)", "zone": "상온", "exp": "2028-02-28", "note": "B.B. 28/02/28", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s115", "name": "오뚜기 순후추 50g (후추 100%, 캔)", "cat": "향신료(후추 가루)", "zone": "상온", "exp": "2027-03-23", "note": "바닥 각인 연도 일부 흐려 추정", "est": true, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s116", "name": "Bad Ischler Kristallsalz fein & jodiert (오스트리아, 요오드 첨가 고운 소금)", "cat": "소금", "zone": "상온", "exp": "", "note": "확인 불가 (바닥 각인 2026년 표기, 일·월 번짐)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s117", "name": "Maggi(맥기) 시즈닝 소스 (태국, 노란 라벨 병)", "cat": "소스(시즈닝 소스)", "zone": "상온", "exp": "2027-02-28", "note": "캡 각인, 일/월/년 순", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s118", "name": "건조 슬라이스 트러플 (투명 소분병)", "cat": "버섯류(건조 트러플)", "zone": "상온", "exp": "", "note": "표기 없음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s119", "name": "다마루야 와사비 소금(田丸屋 わさびのおいしい塩) 20g (일본)", "cat": "향신 소금(와사비 소금)", "zone": "상온", "exp": "2026-11-19", "note": "용기 하단 각인", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s120", "name": "오늘은 케이엔 페퍼분말(Cayenne Pepper Powder) 45g (건고추 100%)", "cat": "향신료(고춧가루류)", "zone": "상온", "exp": "2025-10-29", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s121", "name": "성진식품 월계수잎(LAUREL LEAVES) 5g (터키산)", "cat": "향신료(허브)", "zone": "상온", "exp": "2029-01-05", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s122", "name": "다마루야(田丸屋) WASA BBQ 와사비&스파이스 조미료 50g (일본)", "cat": "복합 조미료(시즈닝)", "zone": "상온", "exp": "2026-11-28", "note": "미개봉 기준", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s123", "name": "RE TARTÚ 카초 에 페페 트러플 크림(페코리노 크림 소스, 여름 트러플 2%) (이탈리아 Giuliano Tartufi)", "cat": "소스(치즈·트러플 크림)", "zone": "", "exp": "2029-02-27", "note": "뚜껑 각인, 개봉됨·잔량 적음", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s124", "name": "Arnott's Cream Favourites 500g (호주, 크림 비스킷 5종 모음)", "cat": "과자(크림 샌드 비스킷)", "zone": "상온", "exp": "2027-01-04", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s125", "name": "Clément Faugier 크렘 드 마롱(밤크림) L'ORIGINALE 100g (프랑스) 캔 — 같은 제품 사진 2세트(각인 시각 다름, 2캔일 수 있음)", "cat": "잼·스프레드(밤 스프레드)", "zone": "상온", "exp": "2031-01-28", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s126", "name": "Arnott's Tim Tam (베이지색 포장, 맛 미확인) (호주)", "cat": "과자(초콜릿 비스킷)", "zone": "상온", "exp": "2027-02-13", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s127", "name": "Boston America 스폰지밥 Eggstra Sours 딸기맛 사워 캔디 에그 틴 34g", "cat": "사탕(사워 캔디)", "zone": "상온", "exp": "", "note": "확인 불가 (로트 25234CH만 표기)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s128", "name": "Boston America 스머프 Smurfette's Smurfy Blue Boo! Berry Candy Sours 39.6g", "cat": "사탕(사워 캔디)", "zone": "상온", "exp": "", "note": "확인 불가 (로트 25358CH만 표기)", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s129", "name": "백설 고소함 가득 참기름 (저온압착, 캔, 용량 미확인)", "cat": "기름류(참기름)", "zone": "상온", "exp": "2027-12-15", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}, {"id": "s130", "name": "유동 자연산 골뱅이 300g (골뱅이 47%, 캔)", "cat": "수산물 통조림", "zone": "상온", "exp": "2030-10-12", "note": "", "est": false, "qty": "", "opened": "", "used": false, "usedAt": ""}], "shop": [], "dishes": [{"id": "d1", "name": "된장찌개", "keys": "된장"}, {"id": "d2", "name": "김치찌개", "keys": "김치"}, {"id": "d3", "name": "김치볶음밥", "keys": "김치"}, {"id": "d4", "name": "계란말이", "keys": "계란/유정란"}, {"id": "d5", "name": "계란볶음밥", "keys": "계란/유정란"}, {"id": "d6", "name": "황태국", "keys": "황태"}, {"id": "d7", "name": "오징어볶음", "keys": "오징어, 고추장/고춧가루"}, {"id": "d8", "name": "골뱅이무침", "keys": "골뱅이"}, {"id": "d9", "name": "카레라이스", "keys": "카레"}, {"id": "d10", "name": "안동찜닭", "keys": "찜닭"}, {"id": "d11", "name": "국물떡볶이", "keys": "떡볶이"}, {"id": "d12", "name": "간장닭갈비", "keys": "간장닭갈비"}, {"id": "d13", "name": "오리훈제 구이", "keys": "오리훈제"}, {"id": "d14", "name": "오리고추불고기", "keys": "오리고추양념"}, {"id": "d15", "name": "참굴비 구이", "keys": "굴비"}, {"id": "d16", "name": "한우갈비탕", "keys": "갈비탕"}, {"id": "d17", "name": "미니돈까스", "keys": "미니돈까스"}, {"id": "d18", "name": "등심돈가스", "keys": "등심돈가스"}, {"id": "d19", "name": "군만두", "keys": "군만두"}, {"id": "d20", "name": "칼국수", "keys": "칼국수면"}, {"id": "d21", "name": "물냉면", "keys": "냉면"}, {"id": "d22", "name": "새우볶음밥", "keys": "새우"}, {"id": "d23", "name": "바질페스토 파스타", "keys": "페스토"}, {"id": "d24", "name": "카초 에 페페 파스타", "keys": "카초"}, {"id": "d25", "name": "우렁강된장 비빔밥", "keys": "강된장"}, {"id": "d26", "name": "쌈밥", "keys": "쌈장/쌈토장"}, {"id": "d27", "name": "닭가슴살 샐러드", "keys": "닭가슴살"}, {"id": "d28", "name": "작심통밥 볶음밥", "keys": "작심통밥"}, {"id": "d29", "name": "전복톳밥", "keys": "톳밥"}, {"id": "d30", "name": "바지락 된장찌개", "keys": "바지락 된장찌개"}, {"id": "d31", "name": "고깃집 된장찌개", "keys": "고깃집 된장찌개"}, {"id": "d32", "name": "닭껍질튀김 안주", "keys": "닭껍질"}, {"id": "d33", "name": "멸치볶음 정식", "keys": "멸치"}, {"id": "d34", "name": "제육볶음", "keys": "돼지고기, 고추장"}, {"id": "d35", "name": "불고기", "keys": "소고기"}, {"id": "d36", "name": "비빔국수", "keys": "소면, 고추장"}], "memos": [], "meals": {}}</script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const DATA_KEY="jy-fridge-data", QUEUE_KEY="jy-fridge-queue", SET_KEY="jy-fridge-settings", UI_KEY="jy-fridge-ui";
+const DAY=864e5;
+const pad=n=>String(n).padStart(2,"0");
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const dot=s=>s?s.replace(/-/g,"."):"";
+const toDate=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const WD=["일","월","화","수","목","금","토"];
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+const fmtTime=s=>{if(!s)return"";const d=new Date(s);if(isNaN(d))return"";const t=today();const sd=new Date(d);sd.setHours(0,0,0,0);const diff=Math.round((t-sd)/DAY);const hm=`${pad(d.getHours())}:${pad(d.getMinutes())}`;return diff===0?`오늘 ${hm}`:diff===1?`어제 ${hm}`:`${d.getMonth()+1}/${d.getDate()} ${hm}`;};
+
+/* ===== 데이터 ===== */
+const SEED=JSON.parse($("seed").textContent);
+function normalize(d){
+  d=d||{};
+  for(const k of ["items","shop","memos","dishes","logs"]) if(!Array.isArray(d[k])) d[k]=k==="dishes"?clone(SEED.dishes):[];
+  if(!d.meals||typeof d.meals!=="object") d.meals={};
+  return d;
+}
+let data=normalize(ls.get(DATA_KEY,null)||clone(SEED));
+let queue=ls.get(QUEUE_KEY,[]);
+let S=Object.assign({owner:"kimnamhoon-bit",repo:"fridge-data",token:"",name:""},ls.get(SET_KEY,{}));
+const connected=()=>!!(S.owner&&S.repo&&S.token);
+const saveLocal=()=>{ls.set(DATA_KEY,data);ls.set(QUEUE_KEY,queue);};
+
+/* 변경 연산: 두 사람이 동시에 고쳐도 서로 덮어쓰지 않도록, 최신 서버 데이터에 연산을 다시 적용해 저장 */
+const COLS=["items","shop","memos","dishes","logs"];
+function apply(d,op){
+  const p=op.p||{};
+  if(op.t==="replace"){const n=normalize(clone(p.data));for(const k of Object.keys(d))delete d[k];Object.assign(d,n);return;}
+  if(op.t==="meal.set"){const m=d.meals[p.date]||{};if(p.text){m[p.slot]=p.text;m[p.slot+"By"]=p.by||"";}else{delete m[p.slot];delete m[p.slot+"By"];}if(m.lunch||m.dinner)d.meals[p.date]=m;else delete d.meals[p.date];return;}
+  const [col,act]=op.t.split(".");
+  if(!COLS.includes(col))return;
+  const arr=d[col];
+  if(act==="add"){if(!arr.some(x=>x.id===p.x.id)){const i=p.index==null?arr.length:Math.min(p.index,arr.length);arr.splice(i,0,clone(p.x));}}
+  else if(act==="update"){const x=arr.find(x=>x.id===p.id);if(x)Object.assign(x,clone(p.f));}
+  else if(act==="remove"){const i=arr.findIndex(x=>x.id===p.id);if(i>=0)arr.splice(i,1);}
+}
+const OP={
+  add:(col,x,index)=>({t:col+".add",p:{x,index}}),
+  update:(col,id,f)=>({t:col+".update",p:{id,f}}),
+  remove:(col,id)=>({t:col+".remove",p:{id}}),
+  meal:(date,slot,text)=>({t:"meal.set",p:{date,slot,text,by:S.name}}),
+};
+/* 되돌리기용 역연산 */
+const INV={
+  add:(col,x)=>OP.remove(col,x.id),
+  update:(col,id,f)=>{const x=data[col].find(x=>x.id===id);const old={};for(const k of Object.keys(f))old[k]=x?x[k]:undefined;return OP.update(col,id,old);},
+  remove:(col,id)=>{const i=data[col].findIndex(x=>x.id===id);return OP.add(col,clone(data[col][i]),i);},
+  meal:(date,slot)=>({t:"meal.set",p:{date,slot,text:(data.meals[date]||{})[slot]||"",by:(data.meals[date]||{})[slot+"By"]||""}}),
+};
+function commit(ops,msg,inv){
+  ops.forEach(o=>apply(data,o));
+  queue.push(...ops);
+  saveLocal(); render(); scheduleSync();
+  if(msg) toast(msg,inv&&inv.length?()=>commit(inv.slice().reverse(),"되돌렸어요"):null);
+}
+
+/* ===== GitHub 동기화 ===== */
+const b64enc=str=>{const bytes=new TextEncoder().encode(str);let bin="";for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(bin);};
+const b64dec=b64=>new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g,"")),c=>c.charCodeAt(0)));
+const apiUrl=path=>`https://api.github.com/repos/${encodeURIComponent(S.owner)}/${encodeURIComponent(S.repo)}/contents/${path||"data.json"}`;
+async function gh(method,body,path){
+  return fetch(apiUrl(path)+(method==="GET"?`?t=${Date.now()}`:""),{method,cache:"no-store",headers:{Authorization:`Bearer ${S.token}`,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});
+}
+async function ghRawGet(path){
+  return fetch(apiUrl(path)+`?t=${Date.now()}`,{method:"GET",cache:"no-store",headers:{Authorization:`Bearer ${S.token}`,Accept:"application/vnd.github.raw"}});
+}
+function ghError(r){
+  if(r.status===401)return"토큰이 맞지 않거나 만료됐어요. 설정에서 토큰을 다시 넣어 주세요.";
+  if(r.status===403)return"토큰에 이 저장소 쓰기 권한이 없어요. 토큰의 Contents 권한을 Read and write로 해 주세요.";
+  if(r.status===404)return"저장소를 찾지 못했어요. 아이디·저장소 이름과 토큰의 저장소 선택을 확인해 주세요.";
+  return`GitHub 응답 오류(${r.status})가 났어요. 잠시 뒤 다시 시도해요.`;
+}
+async function pull(){
+  const r=await gh("GET");
+  if(r.status===404){
+    // 파일이 없는지, 저장소가 없는지 구분
+    const rr=await fetch(`https://api.github.com/repos/${encodeURIComponent(S.owner)}/${encodeURIComponent(S.repo)}`,{cache:"no-store",headers:{Authorization:`Bearer ${S.token}`,Accept:"application/vnd.github+json"}});
+    if(rr.ok)return{sha:null,remote:null};
+    throw new Error(ghError(rr));
+  }
+  if(!r.ok)throw new Error(ghError(r));
+  const j=await r.json();
+  return{sha:j.sha,remote:normalize(JSON.parse(b64dec(j.content)))};
+}
+
+/* ===== 사진: data.json과 별도로 photos/<id>.jpg 파일로 저장 ===== */
+function compressImage(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const max=1280;let w=img.width,h=img.height;
+        if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+        const cv=document.createElement("canvas");cv.width=w;cv.height=h;
+        cv.getContext("2d").drawImage(img,0,0,w,h);
+        res(cv.toDataURL("image/jpeg",0.75));
+      };
+      img.onerror=()=>rej(new Error("이미지를 열지 못했어요"));
+      img.src=fr.result;
+    };
+    fr.onerror=()=>rej(new Error("파일을 읽지 못했어요"));
+    fr.readAsDataURL(file);
+  });
+}
+const PHOTO_CACHE_KEY="jy-fridge-photocache";
+const photoMem=new Map();
+function photoCacheGet(id){if(photoMem.has(id))return photoMem.get(id);const c=ls.get(PHOTO_CACHE_KEY,{});if(c[id])photoMem.set(id,c[id]);return c[id]||null;}
+function photoCacheSet(id,dataUrl){
+  photoMem.set(id,dataUrl);
+  const c=ls.get(PHOTO_CACHE_KEY,{});c[id]=dataUrl;
+  const ks=Object.keys(c);while(ks.length>16){delete c[ks.shift()];}
+  ls.set(PHOTO_CACHE_KEY,c);
+}
+function photoCacheDel(id){photoMem.delete(id);const c=ls.get(PHOTO_CACHE_KEY,{});if(id in c){delete c[id];ls.set(PHOTO_CACHE_KEY,c);}}
+async function photoSha(path){try{const r=await gh("GET",null,path);if(!r.ok)return null;return(await r.json()).sha;}catch(e){return null;}}
+async function uploadPhoto(path,dataUrl){
+  const sha=await photoSha(path);
+  const r=await gh("PUT",{message:`${S.name||"앱"}: 사진 올리기`,content:dataUrl.split(",")[1],...(sha?{sha}:{})},path);
+  if(!r.ok)throw new Error(ghError(r));
+}
+async function deletePhotoBestEffort(path){try{const sha=await photoSha(path);if(sha)await gh("DELETE",{message:`${S.name||"앱"}: 사진 삭제`,sha},path);}catch(e){}}
+const photoUrlCache=new Map();
+function loadPhoto(path){
+  if(photoUrlCache.has(path))return photoUrlCache.get(path);
+  const p=(async()=>{try{const r=await ghRawGet(path);if(!r.ok)return null;return URL.createObjectURL(await r.blob());}catch(e){return null;}})();
+  photoUrlCache.set(path,p);return p;
+}
+
+let sync={state:connected()?"idle":"local",at:null,err:"",busy:false,sha:null};
+let syncTimer=null;
+function setSync(state,err){
+  sync.state=state;sync.err=err||"";
+  const pill=$("sync-pill");pill.className="sync "+state;
+  $("sync-text").textContent=state==="local"?"이 기기만":state==="saving"?"저장 중…":state==="error"?"연결 오류":state==="ok"?`동기화 ${sync.at?fmtTime(sync.at).replace("오늘 ",""):""}`:"연결 중…";
+  const n=$("notice");
+  if(state==="error"){n.textContent=err;n.className="notice err";n.hidden=false;}
+  else if(state==="ok"||state==="saving"){n.hidden=true;n.className="notice";}
+  else if(n.classList.contains("err")){n.hidden=true;n.className="notice";}
+}
+function scheduleSync(delay=700){
+  if(!connected()){setSync("local");return;}
+  clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(),delay);
+}
+async function syncNow(){
+  if(!connected()){setSync("local");return;}
+  if(sync.busy){scheduleSync(800);return;}
+  sync.busy=true;
+  if(queue.length)setSync("saving");
+  try{
+    for(let attempt=0;attempt<5;attempt++){
+      const {sha,remote}=await pull();
+      if(!queue.length&&remote){
+        if(sha!==sync.sha){data=remote;sync.sha=sha;saveLocal();render();}
+        sync.at=new Date().toISOString();setSync("ok");return;
+      }
+      const ops=queue.slice();
+      let base;
+      if(remote){base=remote;ops.forEach(o=>apply(base,o));}
+      else base=clone(data); // 첫 저장: 지금 기기의 목록으로 시작
+      base.savedAt=new Date().toISOString();
+      const r=await gh("PUT",{message:`${S.name||"앱"}: ${ops.length?ops[ops.length-1].t:"초기 데이터"}`,content:b64enc(JSON.stringify(base)),...(sha?{sha}:{})});
+      if(r.status===409||(r.status===422&&sha)){await new Promise(res=>setTimeout(res,300+Math.random()*500));continue;}
+      if(!r.ok)throw new Error(ghError(r));
+      const j=await r.json();
+      sync.sha=j.content.sha;
+      queue.splice(0,ops.length);
+      data=base;queue.forEach(o=>apply(data,o));
+      saveLocal();render();
+      sync.at=new Date().toISOString();setSync(queue.length?"saving":"ok");
+      if(queue.length){sync.busy=false;return syncNow();}
+      return;
+    }
+    throw new Error("동시에 저장이 겹쳤어요. 잠시 뒤 자동으로 다시 저장할게요.");
+  }catch(e){
+    const msg=e&&e.message&&!/Failed to fetch|NetworkError|Load failed/i.test(e.message)?e.message:"인터넷 연결이 없어서 이 기기에만 저장해 뒀어요. 연결되면 자동으로 올라가요.";
+    setSync("error",msg);
+    if(queue.length){clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,15000);}
+  }finally{sync.busy=false;}
+}
+setInterval(()=>{if(document.visibilityState==="visible"&&connected()&&!sync.busy&&!document.querySelector("dialog[open]")&&!document.activeElement.matches("input,textarea"))syncNow();},30000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncNow();});
+window.addEventListener("online",()=>syncNow());
+
+/* ===== 상태 계산 ===== */
+const ST={
+  bad:{t:"기한 지남",c:"var(--bad)",b:"var(--bad-soft)"},
+  warn:{t:"30일 이내",c:"var(--warn)",b:"var(--warn-soft)"},
+  soon:{t:"90일 이내",c:"var(--soon)",b:"var(--soon-soft)"},
+  ok:{t:"여유",c:"var(--accent)",b:"var(--accent-soft)"},
+  none:{t:"기한 모름",c:"var(--none)",b:"var(--none-soft)"}
+};
+function info(it){const days=it.exp?Math.round((toDate(it.exp)-today())/DAY):null;const st=days===null?"none":days<0?"bad":days<=30?"warn":days<=90?"soon":"ok";return{days,st};}
+const dday=days=>days===null?"기한 모름":days<0?`${-days}일 지남`:days===0?"오늘까지":`D-${days}`;
+const active=()=>data.items.filter(i=>!i.used);
+
+/* ===== 화면 상태 ===== */
+let ui=Object.assign({view:"home",zone:"전체",st:"all",sort:"date",rmode:"fridge",urgent:true},ls.get(UI_KEY,{}));
+let q="",weekOffset=0,excluded=new Set();
+const saveUI=()=>ls.set(UI_KEY,{view:ui.view,zone:ui.zone,st:ui.st,sort:ui.sort,rmode:ui.rmode,urgent:ui.urgent});
+const VIEWS=["home","fridge","plan","log","shop","memo"];
+function go(v){ui.view=v;render();window.scrollTo(0,0);}
+document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>go(b.dataset.goto));
+$("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b)go(b.dataset.v);});
+
+function render(){
+  saveUI();
+  VIEWS.forEach(v=>$("v-"+v).hidden=ui.view!==v);
+  document.querySelectorAll("#nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===ui.view?"page":"false"));
+  const act=active();
+  const bad=act.filter(i=>info(i).st==="bad").length;
+  $("nav-bad").hidden=!bad;$("nav-bad").textContent=bad;
+  const sc=data.shop.filter(s=>!s.done).length;
+  $("nav-shop").hidden=!sc;$("nav-shop").textContent=sc;
+  ({home:renderHome,fridge:renderFridge,plan:renderPlan,log:renderLog,shop:renderShop,memo:renderMemo})[ui.view]();
+}
+
+/* ===== 홈 ===== */
+function renderHome(){
+  const t=today(),k=iso(t),m=data.meals[k]||{};
+  $("home-date").textContent=`${t.getMonth()+1}월 ${t.getDate()}일 ${WD[t.getDay()]}요일 · 오늘 저녁`;
+  const dn=$("home-dinner");dn.textContent=m.dinner||"아직 안 정했어요";dn.classList.toggle("none",!m.dinner);
+  $("home-dinner-by").textContent=m.dinner&&m.dinnerBy?`${m.dinnerBy}님이 정함`:"";
+  $("home-write").textContent=m.dinner?"메뉴 바꾸기":"저녁 메뉴 쓰기";
+
+  const soon=active().map(i=>({i,...info(i)})).filter(x=>x.days!==null&&x.days>=0&&x.days<=30).sort((a,b)=>a.days-b.days).slice(0,5);
+  const bad=active().filter(i=>info(i).st==="bad").length;
+  $("home-soon").innerHTML=(soon.length?soon.map(x=>`<div class="mini-row"><span class="n">${esc(x.i.name)}</span><span class="badge" style="--s:${ST[x.st].c};--bs:${ST[x.st].b}">${dday(x.days)}</span></div>`).join(""):`<p class="hint">30일 안에 기한이 끝나는 품목이 없어요.</p>`)
+    +(bad?`<div class="mini-row"><button class="link" type="button" id="home-bad" style="color:var(--bad)">기한 지난 품목 ${bad}개 정리하기</button></div>`:"");
+  const hb=$("home-bad");if(hb)hb.onclick=()=>{ui.zone="전체";ui.st="bad";go("fridge");};
+
+  const shop=data.shop.filter(s=>!s.done);
+  $("home-shop").innerHTML=shop.length?shop.slice(0,5).map(s=>`<div class="mini-row"><span class="n">${esc(s.name)}</span></div>`).join("")+(shop.length>5?`<p class="hint">외 ${shop.length-5}개</p>`:""):`<p class="hint">살 것이 없어요.</p>`;
+
+  const mon=addDays(t,-((t.getDay()+6)%7));
+  $("home-week").innerHTML=[...Array(7)].map((_,i)=>{const d=addDays(mon,i),mm=data.meals[iso(d)]||{};return`<div class="wd ${iso(d)===k?"today":""}"><b>${WD[d.getDay()]}</b><span>${esc(mm.dinner||"·")}</span></div>`;}).join("");
+
+  const memos=sortedMemos().slice(0,2);
+  $("home-memo").innerHTML=memos.length?memos.map(m=>`<div class="mini-row"><span class="n" style="white-space:pre-wrap">${m.pinned?'<span class="pin">고정 </span>':""}${esc(m.text.length>80?m.text.slice(0,80)+"…":m.text)}</span></div>`).join(""):`<p class="hint">메모가 없어요.</p>`;
+
+  const rlogs=sortedLogs().slice(0,2);
+  $("home-log-list").innerHTML=rlogs.length?rlogs.map(l=>`<div class="mini-row photo"><img class="thumb-sm" data-hthumb="${esc(l.id)}" hidden alt=""><span class="n">${esc(l.dish||"이름 없는 밥상")}<br><span class="rating ${l.rating?"":"muted"}" style="font-size:12px">${starsHtml(l.rating||0)}</span></span></div>`).join(""):`<p class="hint">아직 기록이 없어요.</p>`;
+  rlogs.forEach(l=>paintHomeThumb(l.id,l.photo));
+}
+$("home-write").onclick=()=>{$("dinner-input").value=(data.meals[iso(today())]||{}).dinner||"";$("dlg-dinner").showModal();$("dinner-input").focus();};
+$("home-roulette").onclick=()=>{go("plan");setTimeout(()=>$("roulette").scrollIntoView({block:"start"}),50);};
+$("home-log").onclick=()=>{const m=data.meals[iso(today())]||{};go("log");openLog(null,{date:iso(today()),dish:m.dinner||""});};
+$("dinner-form").addEventListener("submit",e=>{e.preventDefault();const k=iso(today()),v=$("dinner-input").value.trim();$("dlg-dinner").close();commit([OP.meal(k,"dinner",v)],v?"오늘 저녁을 정했어요":"오늘 저녁을 비웠어요",[INV.meal(k,"dinner")]);});
+
+/* ===== 냉장고 ===== */
+const ZONES=["전체","냉장","냉동","상온"];
+const ZC={냉장:"var(--cold)",냉동:"var(--frozen)",상온:"var(--room)"};
+function renderFridge(){
+  const act=active(),cnt=f=>act.filter(f).length;
+  const sum=[
+    {k:"기한 지남",v:cnt(i=>info(i).st==="bad"),cls:"bad",go:()=>{ui.zone="전체";ui.st="bad";}},
+    {k:"30일 이내",v:cnt(i=>info(i).st==="warn"),cls:"warn",go:()=>{ui.zone="전체";ui.st="warn";}},
+    ...["냉장","냉동","상온"].map(z=>({k:z,v:cnt(i=>i.zone===z),z,go:()=>{ui.zone=z;ui.st="all";}}))
+  ];
+  $("summary").innerHTML="";
+  sum.forEach(c=>{const b=document.createElement("button");b.type="button";b.className="stat "+(c.cls||"");b.innerHTML=`<span class="k">${c.z?`<span class="dot" style="background:${ZC[c.z]}"></span>`:""}${c.k}</span><span class="v">${c.v}</span>`;b.onclick=()=>{c.go();render();};$("summary").appendChild(b);});
+  $("ztabs").innerHTML="";
+  ZONES.forEach(z=>{const b=document.createElement("button");b.type="button";b.setAttribute("aria-pressed",ui.zone===z);b.innerHTML=`${z}<span class="n">${z==="전체"?act.length:cnt(i=>i.zone===z)}</span>`;b.onclick=()=>{ui.zone=z;render();};$("ztabs").appendChild(b);});
+  const inZone=act.filter(i=>ui.zone==="전체"||i.zone===ui.zone);
+  $("chips").innerHTML="";
+  [["all","모두",inZone.length],...Object.keys(ST).map(k=>[k,ST[k].t,inZone.filter(i=>info(i).st===k).length])].forEach(([k,t,n])=>{
+    if(k!=="all"&&n===0&&ui.st!==k)return;
+    const b=document.createElement("button");b.type="button";b.className="chip";b.setAttribute("aria-pressed",ui.st===k);b.textContent=`${t} ${n}`;b.onclick=()=>{ui.st=k;render();};$("chips").appendChild(b);
+  });
+  document.querySelectorAll("#fridge-sort button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===ui.sort));
+  const qq=q.trim().toLowerCase();
+  const rows=inZone.filter(i=>(ui.st==="all"||info(i).st===ui.st)&&(!qq||`${i.name} ${i.cat} ${i.note} ${i.qty}`.toLowerCase().includes(qq)));
+  const order=new Map(data.items.map((it,ix)=>[it.id,ix]));
+  if(ui.sort==="date")rows.sort((a,b)=>(info(a).days??1e9)-(info(b).days??1e9)||order.get(a.id)-order.get(b.id));
+  else if(ui.sort==="name")rows.sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+  else rows.sort((a,b)=>order.get(b.id)-order.get(a.id));
+  if(!rows.length){$("list").innerHTML=`<div class="empty">${qq?"검색 결과가 없어요.":"이 조건에 맞는 품목이 없어요."}</div>`;return;}
+  $("list").innerHTML=rows.map(i=>{
+    const{days,st}=info(i),s=ST[st];
+    const badge=days===null?s.t:days<=90||days<0?dday(days):s.t;
+    let opened="";if(i.opened){const od=Math.round((today()-toDate(i.opened))/DAY);opened=`<span class="tag">개봉 ${od>=0?od+"일째":dot(i.opened)}</span>`;}
+    return`<button type="button" class="item" data-id="${esc(i.id)}" style="--s:${s.c};--bs:${s.b}">
+      <span class="stripe"></span>
+      <span class="main"><span class="name">${esc(i.name)}</span>
+        <span class="meta"><span class="zone z-${i.zone||"미정"}">${i.zone||"보관 확인 필요"}</span>${i.cat?`<span class="cat">${esc(i.cat)}</span>`:""}${i.qty?`<span class="tag">${esc(i.qty)}</span>`:""}${opened}${i.note?`<span class="note">${esc(i.note)}</span>`:""}</span></span>
+      <span class="right"><span class="date">${i.exp?dot(i.exp):"—"}</span><span class="badge">${badge}</span>${i.est?`<span class="est">추정</span>`:""}</span>
+    </button>`;
+  }).join("");
+}
+$("q").addEventListener("input",e=>{q=e.target.value;render();});
+document.querySelectorAll("#fridge-sort button").forEach(b=>b.onclick=()=>{ui.sort=b.dataset.s;render();});
+$("list").addEventListener("click",e=>{const b=e.target.closest(".item");if(b)openItem(b.dataset.id);});
+$("btn-add").onclick=()=>openItem();
+
+let editId=null,fromShop=null;
+function openItem(id,preset){
+  editId=id||null;fromShop=preset&&preset.shopId||null;
+  const it=id?data.items.find(i=>i.id===id):{name:preset&&preset.name||"",cat:"",zone:["냉장","냉동","상온"].includes(ui.zone)?ui.zone:"냉장",exp:"",note:"",est:false,qty:"",opened:""};
+  if(!it)return;
+  $("item-title").textContent=id?"품목 수정":"품목 추가";
+  $("f-name").value=it.name;$("f-cat").value=it.cat||"";$("f-qty").value=it.qty||"";
+  document.querySelectorAll('input[name="zone"]').forEach(r=>r.checked=r.value===it.zone);
+  $("f-exp").value=it.exp||"";$("f-opened").value=it.opened||"";
+  $("f-noexp").checked=!!id&&!it.exp;$("f-exp").disabled=$("f-noexp").checked;
+  $("f-est").checked=!!it.est;$("f-note").value=it.note||"";
+  $("used-box").hidden=!id;$("btn-del").hidden=!id;$("f-toshop").checked=true;
+  $("cat-list").innerHTML=[...new Set(data.items.map(i=>i.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ko")).map(c=>`<option value="${esc(c)}"></option>`).join("");
+  $("dlg-item").showModal();if(!id)$("f-name").focus();
+}
+$("f-noexp").onchange=e=>{$("f-exp").disabled=e.target.checked;if(e.target.checked)$("f-exp").value="";};
+$("item-form").addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=$("f-name").value.trim();if(!name)return;
+  const zone=(document.querySelector('input[name="zone"]:checked')||{}).value||"";
+  const f={name,cat:$("f-cat").value.trim(),qty:$("f-qty").value.trim(),zone,exp:$("f-noexp").checked?"":$("f-exp").value,opened:$("f-opened").value,est:$("f-est").checked,note:$("f-note").value.trim()};
+  $("dlg-item").close();
+  if(editId){commit([OP.update("items",editId,f)],"수정했어요",[INV.update("items",editId,f)]);}
+  else{
+    const x={id:uid(),used:false,usedAt:"",addedBy:S.name,...f};
+    const ops=[OP.add("items",x)],inv=[INV.add("items",x)];
+    if(fromShop){inv.push(INV.remove("shop",fromShop));ops.push(OP.remove("shop",fromShop));}
+    commit(ops,`‘${name}’ 추가했어요`,inv);
+  }
+});
+$("btn-used").onclick=()=>{
+  const it=data.items.find(i=>i.id===editId);if(!it)return;
+  const f={used:true,usedAt:new Date().toISOString()};
+  const ops=[OP.update("items",it.id,f)],inv=[INV.update("items",it.id,f)];
+  if($("f-toshop").checked&&!data.shop.some(s=>!s.done&&s.name===it.name)){const s={id:uid(),name:it.name,done:false,by:S.name};ops.push(OP.add("shop",s));inv.push(INV.add("shop",s));}
+  $("dlg-item").close();commit(ops,`‘${it.name}’ 다 먹음 처리했어요`,inv);
+};
+$("btn-del").onclick=async()=>{
+  const it=data.items.find(i=>i.id===editId);if(!it)return;
+  $("dlg-item").close();
+  if(!await ask("품목 삭제",`‘${it.name}’을(를) 목록에서 지울까요? 다 먹은 경우엔 ‘다 먹음’을 쓰면 장보기에 남길 수 있어요.`,"삭제"))return;
+  commit([OP.remove("items",it.id)],"삭제했어요",[INV.remove("items",it.id)]);
+};
+
+/* ===== 식단·룰렛 ===== */
+function itemText(i){return`${i.name} ${i.cat}`;}
+function dishMatch(d){
+  // 주재료: 쉼표=모두 필요, /=둘 중 하나
+  const groups=(d.keys||"").split(",").map(s=>s.trim()).filter(Boolean);
+  if(!groups.length)return null;
+  const act=active();const found=[];
+  for(const g of groups){
+    const alts=g.split("/").map(s=>s.trim()).filter(Boolean);
+    const hit=act.filter(i=>info(i).st!=="bad"&&alts.some(a=>itemText(i).includes(a)));
+    if(!hit.length)return null;
+    hit.sort((a,b)=>(info(a).days??1e9)-(info(b).days??1e9));
+    found.push(hit.find(h=>info(h).st!=="bad")||hit[0]);
+  }
+  return found;
+}
+function weekDates(off){const t=today();const mon=addDays(t,-((t.getDay()+6)%7)+off*7);return[...Array(7)].map((_,i)=>addDays(mon,i));}
+function candidates(){
+  let list=[];
+  if(ui.rmode==="week"){
+    const names=new Set();
+    weekDates(weekOffset).forEach(d=>{const m=data.meals[iso(d)]||{};[m.lunch,m.dinner].forEach(v=>v&&v.split(/[,·]/).map(s=>s.trim()).filter(Boolean).forEach(n=>names.add(n)));});
+    list=[...names].map(n=>{const d=data.dishes.find(x=>x.name===n);return{id:"w:"+n,name:n,match:d?dishMatch(d):null};});
+  }else{
+    list=data.dishes.map(d=>({id:d.id,name:d.name,match:dishMatch(d)}));
+    if(ui.rmode==="fridge")list=list.filter(c=>c.match);
+  }
+  return list.map(c=>{
+    let w=1;
+    if(ui.urgent&&c.match){const min=Math.min(...c.match.map(i=>info(i).days??999));if(min>=0&&min<=14)w=3;else if(min>=0&&min<=45)w=2;}
+    return{...c,w};
+  });
+}
+let spinning=false,angle=0,lastPick=null,sampleKey="",sample=[];
+const MAXW=12;
+function wheelCands(){
+  const on=candidates().filter(c=>!excluded.has(c.id));
+  if(on.length<=MAXW)return on;
+  const key=on.map(c=>c.id).join("|");
+  if(key!==sampleKey){
+    sampleKey=key;const pool=on.slice();sample=[];
+    while(sample.length<MAXW&&pool.length){const tot=pool.reduce((s,c)=>s+c.w,0);let r=Math.random()*tot,i=0;for(;i<pool.length;i++){if((r-=pool[i].w)<=0)break;}sample.push(pool.splice(Math.min(i,pool.length-1),1)[0].id);}
+  }
+  return on.filter(c=>sample.includes(c.id));
+}
+function wheelColors(){const cs=getComputedStyle(document.documentElement);return["--w1","--w2","--w3","--w4","--w5","--w6"].map(v=>cs.getPropertyValue(v).trim());}
+function drawWheel(){
+  const cv=$("wheel"),ctx=cv.getContext("2d"),W=cv.width,R=W/2-8;
+  const cs=getComputedStyle(document.documentElement);
+  ctx.clearRect(0,0,W,W);
+  const cands=wheelCands();
+  if(!cands.length){ctx.fillStyle=cs.getPropertyValue("--none-soft").trim();ctx.beginPath();ctx.arc(W/2,W/2,R,0,Math.PI*2);ctx.fill();return cands;}
+  const total=cands.reduce((s,c)=>s+c.w,0),cols=wheelColors();
+  let a=angle-Math.PI/2;
+  cands.forEach((c,i)=>{
+    const sw=c.w/total*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(W/2,W/2);ctx.arc(W/2,W/2,R,a,a+sw);ctx.closePath();
+    ctx.fillStyle=cols[i%cols.length];if(cands.length%cols.length===1&&i===cands.length-1&&i>0)ctx.fillStyle=cols[1];
+    ctx.fill();ctx.strokeStyle=cs.getPropertyValue("--surface").trim();ctx.lineWidth=3;ctx.stroke();
+    const mid=a+sw/2,flip=Math.cos(mid)<0;
+    ctx.save();ctx.translate(W/2,W/2);ctx.rotate(flip?mid+Math.PI:mid);ctx.textAlign=flip?"left":"right";ctx.textBaseline="middle";
+    ctx.fillStyle="#ffffff";const fs=cands.length>12?22:cands.length>8?26:30;ctx.font=`500 ${fs}px "IBM Plex Sans KR",sans-serif`;
+    let label=c.name;const maxW=R-70;while(ctx.measureText(label).width>maxW&&label.length>2)label=label.slice(0,-2)+"…";
+    ctx.fillText(label,flip?-(R-18):R-18,0);ctx.restore();
+    c._a0=a;c._a1=a+sw;a+=sw;
+  });
+  ctx.beginPath();ctx.arc(W/2,W/2,R,0,Math.PI*2);ctx.strokeStyle=cs.getPropertyValue("--fg").trim();ctx.lineWidth=6;ctx.stroke();
+  return cands;
+}
+function renderPlan(){
+  document.querySelectorAll('input[name="rmode"]').forEach(r=>r.checked=r.value===ui.rmode);
+  $("r-urgent").checked=ui.urgent;
+  const cands=candidates();
+  $("r-cands").innerHTML=cands.map(c=>`<button type="button" class="chip ${excluded.has(c.id)?"off":""}" data-cid="${esc(c.id)}" aria-pressed="${!excluded.has(c.id)}">${esc(c.name)}${c.w>1?" ★":""}</button>`).join("");
+  const on=cands.filter(c=>!excluded.has(c.id)).length;
+  const shown=wheelCands().length;
+  $("r-shuffle").hidden=on<=MAXW;
+  $("r-cnt").textContent=`(${on}/${cands.length})`;
+  $("r-hint").textContent=!cands.length?(ui.rmode==="fridge"?"냉장고 재료로 만들 수 있는 메뉴가 없어요. 아래 메뉴 목록에 주재료를 적어 주세요.":ui.rmode==="week"?"이번 주 식단이 비어 있어요. 아래 칸에 먼저 적어 주세요.":"메뉴 목록이 비어 있어요."):`${on>MAXW?`후보 ${on}개 중 ${shown}개를 룰렛에 올렸어요. `:`후보 ${on}개. `}${ui.urgent?"★는 기한 임박 재료가 들어가는 메뉴로 더 자주 나와요.":""}`;
+  $("spin").disabled=on<1;
+  if(!spinning)drawWheel();
+
+  // 날짜 선택
+  const t=today();
+  $("r-day").innerHTML=[...Array(7)].map((_,i)=>{const d=addDays(t,i);return`<option value="${iso(d)}">${i===0?"오늘":i===1?"내일":`${d.getMonth()+1}/${d.getDate()}`} (${WD[d.getDay()]}) 저녁</option>`;}).join("");
+
+  // 주간
+  const days=weekDates(weekOffset);
+  $("wk-label").textContent=weekOffset===0?"이번 주":weekOffset===1?"다음 주":weekOffset===-1?"지난주":`${days[0].getMonth()+1}/${days[0].getDate()} 주`;
+  const tk=iso(t);
+  const ae=document.activeElement;const keep=ae&&ae.dataset&&ae.dataset.mk?{k:ae.dataset.mk,v:ae.value,s:ae.selectionStart}:null;
+  $("week").innerHTML=days.map(d=>{const k=iso(d),m=data.meals[k]||{};return`<div class="day ${k===tk?"today":""}"><div class="dl"><b>${WD[d.getDay()]}</b><small>${d.getMonth()+1}/${d.getDate()}</small></div><div class="slots">
+    <label class="slot"><span>점심</span><input class="input" data-mk="${k}|lunch" value="${esc(m.lunch||"")}" autocomplete="off" aria-label="${d.getMonth()+1}월 ${d.getDate()}일 점심"></label>
+    <label class="slot"><span>저녁</span><input class="input" data-mk="${k}|dinner" value="${esc(m.dinner||"")}" autocomplete="off" aria-label="${d.getMonth()+1}월 ${d.getDate()}일 저녁"></label></div></div>`;}).join("");
+  if(keep){const el=document.querySelector(`[data-mk="${keep.k}"]`);if(el){el.value=keep.v;el.focus();try{el.setSelectionRange(keep.s,keep.s);}catch(e){}}}
+
+  // 메뉴 목록
+  $("dish-count").textContent=`${data.dishes.length}개`;
+  const ds=data.dishes.slice().sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+  $("dish-list").innerHTML=ds.length?ds.map(d=>{const m=dishMatch(d);return`<div class="dish-row"><span class="n">${esc(d.name)}<br><small>${esc(d.keys||"주재료 없음")}</small></span>${m?`<span class="ok-dot">재료 있음</span>`:""}<button class="x" type="button" data-dishdel="${esc(d.id)}" aria-label="${esc(d.name)} 삭제">×</button></div>`;}).join(""):`<p class="hint">메뉴가 없어요.</p>`;
+}
+document.querySelectorAll('input[name="rmode"]').forEach(r=>r.onchange=()=>{ui.rmode=r.value;excluded.clear();$("r-result").hidden=true;render();});
+$("r-urgent").onchange=e=>{ui.urgent=e.target.checked;render();};
+$("r-cands").addEventListener("click",e=>{const b=e.target.closest("[data-cid]");if(!b)return;const id=b.dataset.cid;excluded.has(id)?excluded.delete(id):excluded.add(id);render();});
+$("spin").onclick=()=>{
+  if(spinning)return;
+  const cands=drawWheel();if(!cands.length)return;
+  const total=cands.reduce((s,c)=>s+c.w,0);
+  let r=Math.random()*total,pick=cands[0];for(const c of cands){if((r-=c.w)<=0){pick=c;break;}}
+  // 선택 칸 가운데가 위쪽 바늘에 오도록 회전
+  let a0=0;for(const c of cands){if(c===pick)break;a0+=c.w/total*Math.PI*2;}
+  const mid=a0+pick.w/total*Math.PI*2*(0.2+Math.random()*0.6);
+  const base=angle%(Math.PI*2);
+  const target=angle-base+Math.PI*2*6+(Math.PI*2-mid);
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dur=reduce?300:3800,start=performance.now(),from=angle;
+  spinning=true;$("r-result").hidden=true;$("spin").textContent="…";
+  const ease=x=>1-Math.pow(1-x,4);
+  (function frame(now){
+    const k=Math.min(1,(now-start)/dur);angle=from+(target-from)*ease(k);drawWheel();
+    if(k<1)requestAnimationFrame(frame);
+    else{spinning=false;$("spin").textContent="다시";showPick(pick);}
+  })(start);
+};
+function showPick(c){
+  lastPick=c;
+  $("r-dish").textContent=c.name;
+  $("r-ing").textContent=c.match?"재료: "+c.match.map(i=>`${i.name.replace(/\s*\(.*?\)\s*/g," ").trim()} (${dday(info(i).days)})`).join(", "):"냉장고 재료 연결 없음";
+  $("r-result").hidden=false;
+}
+$("r-save").onclick=()=>{
+  if(!lastPick)return;
+  const k=$("r-day").value;const prev=(data.meals[k]||{}).dinner;
+  commit([OP.meal(k,"dinner",lastPick.name)],`${k===iso(today())?"오늘":dot(k).slice(5)} 저녁: ${lastPick.name}${prev?` (전: ${prev})`:""}`,[INV.meal(k,"dinner")]);
+};
+$("r-shuffle").onclick=()=>{sampleKey="";$("r-result").hidden=true;render();};
+$("wk-prev").onclick=()=>{weekOffset--;render();};
+$("wk-next").onclick=()=>{weekOffset++;render();};
+$("week").addEventListener("change",e=>{
+  const el=e.target;if(!el.dataset.mk)return;
+  const[k,slot]=el.dataset.mk.split("|");const v=el.value.trim();
+  if(((data.meals[k]||{})[slot]||"")===v)return;
+  commit([OP.meal(k,slot,v)],"식단을 저장했어요",[INV.meal(k,slot)]);
+});
+$("dish-form").addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=$("dish-name").value.trim(),keys=$("dish-keys").value.trim();if(!name)return;
+  if(data.dishes.some(d=>d.name===name)){toast("이미 있는 메뉴예요");return;}
+  const d={id:uid(),name,keys};$("dish-name").value="";$("dish-keys").value="";
+  commit([OP.add("dishes",d)],`‘${name}’ 메뉴를 추가했어요`,[INV.add("dishes",d)]);
+});
+$("dish-list").addEventListener("click",e=>{const b=e.target.closest("[data-dishdel]");if(!b)return;const d=data.dishes.find(x=>x.id===b.dataset.dishdel);commit([OP.remove("dishes",d.id)],`‘${d.name}’ 메뉴를 지웠어요`,[INV.remove("dishes",d.id)]);});
+
+/* ===== 밥상 기록 ===== */
+const CAMERA_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>`;
+let logSort="date";
+function sortedLogs(){
+  const arr=data.logs.slice();
+  if(logSort==="rating")arr.sort((a,b)=>(b.rating||0)-(a.rating||0)||(b.date||"").localeCompare(a.date||""));
+  else arr.sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||"").localeCompare(a.createdAt||""));
+  return arr;
+}
+function starsHtml(n){return[1,2,3,4,5].map(i=>i<=n?"★":"☆").join("");}
+function renderLog(){
+  document.querySelectorAll("#log-sort button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===logSort));
+  $("log-photo-hint").hidden=connected();
+  const logs=sortedLogs();
+  if(!logs.length){$("log-grid").innerHTML=`<div class="empty" style="grid-column:1/-1">아직 기록이 없어요. 저녁 먹고 사진이나 한줄평을 남겨 보세요.</div>`;return;}
+  $("log-grid").innerHTML=logs.map(l=>`
+    <button type="button" class="log-card" data-id="${esc(l.id)}">
+      <span class="thumb" data-thumb="${esc(l.id)}">${CAMERA_SVG}</span>
+      <span class="body">
+        <span class="dish">${esc(l.dish||"이름 없는 밥상")}</span>
+        <span class="sub"><span class="rating ${l.rating?"":"muted"}">${starsHtml(l.rating||0)}</span><span>${dot(l.date)}</span></span>
+        ${l.note?`<span class="note">${esc(l.note)}</span>`:""}
+      </span>
+    </button>`).join("");
+  logs.forEach(l=>paintThumb(l.id,l.photo));
+}
+async function paintThumb(id,path){
+  const cached=photoCacheGet(id);
+  if(cached){const el=document.querySelector(`[data-thumb="${id}"]`);if(el)el.innerHTML=`<img src="${cached}" alt="">`;return;}
+  if(!path||!connected())return;
+  const url=await loadPhoto(path);
+  const el=document.querySelector(`[data-thumb="${id}"]`);if(el&&url)el.innerHTML=`<img src="${url}" alt="">`;
+}
+async function paintHomeThumb(id,path){
+  const cached=photoCacheGet(id);
+  if(cached){const img=document.querySelector(`[data-hthumb="${id}"]`);if(img){img.src=cached;img.hidden=false;}return;}
+  if(!path||!connected())return;
+  const url=await loadPhoto(path);
+  const img=document.querySelector(`[data-hthumb="${id}"]`);if(img&&url){img.src=url;img.hidden=false;}
+}
+document.querySelectorAll("#log-sort button").forEach(b=>b.onclick=()=>{logSort=b.dataset.s;render();});
+$("log-grid").addEventListener("click",e=>{const b=e.target.closest(".log-card");if(b)openLog(b.dataset.id);});
+$("btn-log-add").onclick=()=>openLog();
+
+let editLogId=null,pendingPhoto=null,pendingPhotoCleared=false,curRating=0;
+function setStars(n){
+  curRating=n;
+  $("log-stars").innerHTML=[1,2,3,4,5].map(i=>`<button type="button" class="star-btn ${i<=n?"on":""}" data-star="${i}" aria-label="별점 ${i}점" aria-pressed="${i<=n}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 17.6 6.1 20.7l1.3-6.6-4.9-4.6 6.6-.8z"/></svg></button>`).join("");
+}
+function showPhotoPreview(src){
+  const img=$("log-photo-img"),ph=$("log-photo-ph"),rm=$("log-photo-rm");
+  if(src){img.src=src;img.hidden=false;ph.hidden=true;rm.hidden=false;}
+  else{img.hidden=true;img.removeAttribute("src");ph.hidden=false;rm.hidden=true;}
+}
+function openLog(id,preset){
+  editLogId=id||null;pendingPhoto=null;pendingPhotoCleared=false;
+  const l=id?data.logs.find(x=>x.id===id):null;
+  $("log-title").textContent=id?"밥상 기록 수정":"밥상 기록";
+  $("log-date").value=(l&&l.date)||(preset&&preset.date)||iso(today());
+  $("log-dish").value=(l&&l.dish)||(preset&&preset.dish)||"";
+  $("log-recipe").value=(l&&l.recipe)||"";
+  $("log-note").value=(l&&l.note)||"";
+  setStars(l?l.rating||0:0);
+  $("dish-namelist").innerHTML=[...new Set(data.dishes.map(d=>d.name))].map(n=>`<option value="${esc(n)}"></option>`).join("");
+  $("log-del").hidden=!id;
+  const cached=id?photoCacheGet(id):null;
+  showPhotoPreview(cached);
+  if(id&&!cached&&l&&l.photo&&connected()){loadPhoto(l.photo).then(u=>{if(editLogId===id&&!pendingPhoto&&!pendingPhotoCleared)showPhotoPreview(u);});}
+  $("dlg-log").showModal();
+}
+$("log-stars").addEventListener("click",e=>{const b=e.target.closest("[data-star]");if(!b)return;const n=+b.dataset.star;setStars(n===curRating?0:n);});
+$("log-photo-box").addEventListener("click",e=>{if(e.target.closest("#log-photo-rm"))return;$("log-photo-input").click();});
+$("log-photo-box").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("#log-photo-rm")){e.preventDefault();$("log-photo-input").click();}});
+$("log-photo-rm").addEventListener("click",e=>{e.stopPropagation();pendingPhoto=null;pendingPhotoCleared=true;showPhotoPreview(null);});
+$("log-photo-input").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const dataUrl=await compressImage(f);pendingPhoto=dataUrl;pendingPhotoCleared=false;showPhotoPreview(dataUrl);}
+  catch(err){toast("사진을 읽지 못했어요");}
+});
+$("log-form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const id=editLogId||uid();
+  const path=`photos/${id}.jpg`;
+  const prevLog=editLogId?data.logs.find(x=>x.id===editLogId):null;
+  let photo=prevLog?prevLog.photo||null:null;
+  const btn=$("log-form").querySelector('button[type="submit"]'),prevLabel=btn.textContent;
+  if(pendingPhoto||pendingPhotoCleared){
+    btn.disabled=true;
+    try{
+      if(pendingPhoto){
+        photoCacheSet(id,pendingPhoto);
+        if(connected()){btn.textContent="사진 올리는 중…";await uploadPhoto(path,pendingPhoto);photo=path;}
+        else photo=null;
+      }else{
+        if(photo&&connected())deletePhotoBestEffort(photo);
+        photoCacheDel(id);photo=null;
+      }
+    }catch(err){toast("사진은 올리지 못했어요. 나머지 내용은 저장할게요");}
+    finally{btn.disabled=false;btn.textContent=prevLabel;}
+  }
+  const f={date:$("log-date").value||iso(today()),dish:$("log-dish").value.trim(),recipe:$("log-recipe").value.trim(),note:$("log-note").value.trim(),rating:curRating,photo};
+  $("dlg-log").close();
+  if(editLogId){commit([OP.update("logs",editLogId,f)],"밥상 기록을 수정했어요",[INV.update("logs",editLogId,f)]);}
+  else{
+    const x={id,by:S.name,createdAt:new Date().toISOString(),...f};
+    commit([OP.add("logs",x)],`‘${f.dish||"밥상"}’ 기록을 남겼어요`,[INV.add("logs",x)]);
+  }
+});
+$("log-del").onclick=async()=>{
+  const l=data.logs.find(x=>x.id===editLogId);if(!l)return;
+  $("dlg-log").close();
+  if(!await ask("기록 삭제",`‘${l.dish||"이 밥상"}’ 기록을 지울까요?`,"삭제"))return;
+  if(l.photo&&connected())deletePhotoBestEffort(l.photo);
+  photoCacheDel(l.id);
+  commit([OP.remove("logs",l.id)],"기록을 지웠어요",[INV.remove("logs",l.id)]);
+};
+
+/* ===== 장보기 ===== */
+function renderShop(){
+  $("shop-list").innerHTML=data.shop.length?data.shop.map(s=>`
+    <div class="srow ${s.done?"done":""}">
+      <label><input type="checkbox" data-shop="${esc(s.id)}" ${s.done?"checked":""}><span>${esc(s.name)}${s.by?` <span class="sub">· ${esc(s.by)}</span>`:""}</span></label>
+      ${s.done?`<button class="btn small" type="button" data-stock="${esc(s.id)}">냉장고에 넣기</button>`:""}
+      <button class="x" type="button" data-shopdel="${esc(s.id)}" aria-label="${esc(s.name)} 삭제">×</button>
+    </div>`).join(""):`<p class="hint">비어 있어요. 품목을 ‘다 먹음’ 처리하면 여기에 자동으로 들어와요.</p>`;
+  $("shop-clear").disabled=!data.shop.some(s=>s.done);
+  const used=data.items.filter(i=>i.used).sort((a,b)=>(b.usedAt||"").localeCompare(a.usedAt||""));
+  $("used-list").innerHTML=used.length?used.slice(0,50).map(i=>`
+    <div class="srow"><label style="cursor:default"><span>${esc(i.name)}<br><span class="sub">${i.usedAt?fmtTime(i.usedAt)+" 다 먹음":""}${i.zone?" · "+i.zone:""}</span></span></label>
+      <button class="btn small" type="button" data-restore="${esc(i.id)}">되돌리기</button>
+      <button class="x" type="button" data-purge="${esc(i.id)}" aria-label="${esc(i.name)} 기록 삭제">×</button></div>`).join(""):`<p class="hint">아직 없어요.</p>`;
+}
+$("shop-form").addEventListener("submit",e=>{e.preventDefault();const v=$("shop-input").value.trim();if(!v)return;const s={id:uid(),name:v,done:false,by:S.name};$("shop-input").value="";commit([OP.add("shop",s)],null);$("shop-input").focus();});
+$("v-shop").addEventListener("change",e=>{const id=e.target.dataset.shop;if(!id)return;const f={done:e.target.checked};commit([OP.update("shop",id,f)],null);});
+$("v-shop").addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.shopdel){const id=t.dataset.shopdel;commit([OP.remove("shop",id)],"장보기에서 지웠어요",[INV.remove("shop",id)]);}
+  else if(t.dataset.stock){const s=data.shop.find(x=>x.id===t.dataset.stock);openItem(null,{name:s.name,shopId:s.id});}
+  else if(t.dataset.restore){const id=t.dataset.restore,f={used:false,usedAt:""};commit([OP.update("items",id,f)],"냉장고로 되돌렸어요",[INV.update("items",id,f)]);}
+  else if(t.dataset.purge){const id=t.dataset.purge;commit([OP.remove("items",id)],"기록을 지웠어요",[INV.remove("items",id)]);}
+});
+$("shop-clear").onclick=()=>{const done=data.shop.filter(s=>s.done);const inv=done.map(s=>INV.remove("shop",s.id)).reverse();commit(done.map(s=>OP.remove("shop",s.id)),"산 항목을 지웠어요",inv);};
+
+/* ===== 메모 ===== */
+function sortedMemos(){return data.memos.slice().sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.updatedAt||b.createdAt||"").localeCompare(a.updatedAt||a.createdAt||""));}
+function renderMemo(){
+  const ms=sortedMemos();
+  $("memo-list").innerHTML=ms.length?ms.map(m=>`<article class="memo ${m.pinned?"pinned":""}">
+    <div class="txt">${esc(m.text)}</div>
+    <div class="foot"><span>${m.pinned?'<span class="pin">고정 · </span>':""}${esc(m.by||"")}${m.by?" · ":""}${fmtTime(m.updatedAt||m.createdAt)}${m.updatedAt&&m.updatedAt!==m.createdAt?" 수정":""}</span>
+      <span class="acts"><button type="button" data-mpin="${esc(m.id)}">${m.pinned?"고정 해제":"고정"}</button><button type="button" data-medit="${esc(m.id)}">수정</button><button type="button" data-mdel="${esc(m.id)}">삭제</button></span></div>
+  </article>`).join(""):`<div class="empty" style="grid-column:1/-1">아직 메모가 없어요. 위 칸에 적어 보세요.</div>`;
+}
+$("memo-form").addEventListener("submit",e=>{e.preventDefault();const v=$("memo-input").value.trim();if(!v)return;const now=new Date().toISOString();const m={id:uid(),text:v,by:S.name,createdAt:now,updatedAt:now,pinned:false};$("memo-input").value="";commit([OP.add("memos",m)],"메모를 추가했어요",[INV.add("memos",m)]);});
+let memoEditId=null;
+$("memo-list").addEventListener("click",async e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.medit){memoEditId=b.dataset.medit;$("memo-edit").value=data.memos.find(m=>m.id===memoEditId).text;$("dlg-memo").showModal();$("memo-edit").focus();}
+  else if(b.dataset.mpin){const id=b.dataset.mpin,m=data.memos.find(x=>x.id===id),f={pinned:!m.pinned};commit([OP.update("memos",id,f)],f.pinned?"메모를 고정했어요":"고정을 풀었어요",[INV.update("memos",id,f)]);}
+  else if(b.dataset.mdel){const id=b.dataset.mdel;commit([OP.remove("memos",id)],"메모를 지웠어요",[INV.remove("memos",id)]);}
+});
+$("memo-edit-form").addEventListener("submit",e=>{e.preventDefault();const v=$("memo-edit").value.trim();$("dlg-memo").close();if(!v||!memoEditId)return;const f={text:v,updatedAt:new Date().toISOString(),by:S.name||data.memos.find(m=>m.id===memoEditId).by};commit([OP.update("memos",memoEditId,f)],"메모를 수정했어요",[INV.update("memos",memoEditId,f)]);});
+
+/* ===== 공통: 토스트, 확인창, 닫기 ===== */
+let toastTimer,undoFn=null;
+function toast(msg,undo){
+  undoFn=undo||null;$("toast-msg").textContent=msg;$("toast-undo").hidden=!undoFn;$("toast").hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$("toast").hidden=true;undoFn=null;},5000);
+}
+$("toast-undo").onclick=()=>{const f=undoFn;undoFn=null;$("toast").hidden=true;if(f)f();};
+function ask(title,body,yes){
+  return new Promise(res=>{
+    $("cf-title").textContent=title;$("cf-body").textContent=body;$("cf-yes").textContent=yes||"확인";
+    const d=$("dlg-confirm");let done=false;
+    const fin=v=>{if(done)return;done=true;d.close();res(v);};
+    $("cf-yes").onclick=()=>fin(true);$("cf-no").onclick=()=>fin(false);d.onclose=()=>fin(false);
+    d.showModal();
+  });
+}
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
+
+/* ===== 설정 ===== */
+function fillSettings(){
+  $("s-name").value=S.name||"";$("s-owner").value=S.owner||"";$("s-repo").value=S.repo||"";$("s-token").value=S.token||"";
+  $("set-status").textContent=connected()?`연결됨: ${S.owner}/${S.repo}${sync.at?` · 마지막 동기화 ${fmtTime(sync.at)}`:""}`:"아직 연결 안 됨. 지금은 이 기기에만 저장돼요.";
+  $("s-code-out").hidden=true;
+}
+$("btn-settings").onclick=()=>{fillSettings();$("dlg-settings").showModal();};
+$("sync-pill").onclick=()=>{if(connected())syncNow();else{fillSettings();$("dlg-settings").showModal();}};
+async function connectWith(next){
+  const prev=S;S=next;ls.set(SET_KEY,S);
+  if(!connected()){setSync("local");return true;}
+  setSync("saving");
+  try{
+    const{sha,remote}=await pull();
+    if(remote){
+      // 서버 목록을 기준으로 하고, 이 기기에서 아직 안 올린 변경만 얹는다
+      data=remote;sync.sha=sha;queue.forEach(o=>apply(data,o));saveLocal();render();
+      if(queue.length)await syncNow();else{sync.at=new Date().toISOString();setSync("ok");}
+      toast("연결했어요. 같은 목록을 함께 봐요");
+    }else{
+      await syncNow();
+      toast("연결했어요. 지금 목록을 GitHub에 처음 올렸어요");
+    }
+    return true;
+  }catch(e){S=prev;ls.set(SET_KEY,S);setSync(connected()?"error":"local",e.message);$("set-status").textContent=e.message;return false;}
+}
+$("settings-form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const next={name:$("s-name").value.trim(),owner:$("s-owner").value.trim(),repo:$("s-repo").value.trim(),token:$("s-token").value.trim()};
+  if(next.token&&(!next.owner||!next.repo)){$("set-status").textContent="GitHub 아이디와 저장소 이름을 넣어 주세요.";return;}
+  $("set-status").textContent="연결 확인 중…";
+  if(await connectWith(next))$("dlg-settings").close();
+});
+$("s-disconnect").onclick=()=>{S={...S,token:""};ls.set(SET_KEY,S);setSync("local");fillSettings();toast("연결을 끊었어요. 이 기기에만 저장돼요");};
+$("s-copy").onclick=async()=>{
+  if(!connected()){$("set-status").textContent="먼저 이 기기를 연결해야 코드를 만들 수 있어요.";return;}
+  const code="FRIDGE1:"+b64enc(JSON.stringify({o:S.owner,r:S.repo,t:S.token}));
+  const out=$("s-code-out");out.value=code;out.hidden=false;
+  try{await navigator.clipboard.writeText(code);toast("연결 코드를 복사했어요");}catch(e){out.focus();out.select();toast("코드를 길게 눌러 복사해 주세요");}
+};
+$("s-apply").onclick=async()=>{
+  const raw=$("s-code-in").value.trim();
+  try{
+    if(!raw.startsWith("FRIDGE1:"))throw 0;
+    const o=JSON.parse(b64dec(raw.slice(8)));
+    $("set-status").textContent="연결 확인 중…";
+    if(await connectWith({name:$("s-name").value.trim()||S.name,owner:o.o,repo:o.r,token:o.t})){$("s-code-in").value="";$("dlg-settings").close();}
+  }catch(e){$("set-status").textContent="연결 코드가 올바르지 않아요. FRIDGE1:로 시작하는 코드 전체를 붙여넣어 주세요.";}
+};
+$("s-export").onclick=()=>{
+  const d=new Date();const name=`냉장고_백업_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  toast("백업 파일을 저장했어요");
+};
+$("s-import").onclick=()=>{$("import-file").value="";$("import-file").click();};
+$("import-file").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;const text=await f.text();let obj=null;
+  try{if(/^\s*\{/.test(text))obj=JSON.parse(text);else{const m=text.match(/<script id="seed" type="application\/json">([\s\S]*?)<\/script>/);if(m)obj=JSON.parse(m[1]);}}catch(err){}
+  if(!obj||!Array.isArray(obj.items)){toast("이 파일에서 냉장고 목록을 찾지 못했어요");return;}
+  $("dlg-settings").close();
+  if(!await ask("목록 바꾸기",`품목 ${obj.items.filter(i=>!i.used).length}개가 든 목록으로 바꿀까요?${connected()?" 배우자 폰에도 같이 바뀌어요.":""}`,"바꾸기"))return;
+  const merged=normalize(obj);if(!obj.dishes)merged.dishes=data.dishes;if(!obj.memos)merged.memos=data.memos;if(!obj.meals)merged.meals=data.meals;if(!obj.logs)merged.logs=data.logs;
+  commit([{t:"replace",p:{data:merged}}],"목록을 바꿨어요",[{t:"replace",p:{data:clone(data)}}]);
+});
+
+/* ===== 시작 ===== */
+setSync(connected()?"idle":"local");
+render();
+if(connected())syncNow();
+else if(!ls.get(SET_KEY,null)){const n=$("notice");n.innerHTML="지금은 이 기기에만 저장돼요. 오른쪽 위 <b>설정</b>에서 GitHub를 연결하면 둘이 같은 목록을 봐요.";n.hidden=false;}
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
