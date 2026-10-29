@@ -492,6 +492,7 @@ dialog::backdrop{background:rgba(10,20,20,.45)}
       <label class="field"><span>칼로리 (100g당)</span><input class="input" type="number" min="0" step="1" inputmode="numeric" id="f-cal" placeholder="kcal"></label>
       <label class="field"><span>단백질 (100g당)</span><input class="input" type="number" min="0" step="0.1" inputmode="decimal" id="f-protein" placeholder="g"></label>
     </div>
+    <label class="field"><span>성분·건강 참고</span><textarea class="input" id="f-health" rows="2" placeholder="주요 성분, 좋은 점·주의할 점. AI로 채우거나 직접 적어도 돼요"></textarea></label>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
       <label class="check"><input type="checkbox" id="f-noexp">소비기한 모름</label>
       <label class="check"><input type="checkbox" id="f-est">날짜 추정(확인 필요)</label>
@@ -741,7 +742,7 @@ function loadPhoto(path){
 }
 
 /* ===== AI (Gemini) ===== */
-const AI_MODEL="gemini-3.1-flash-lite";
+const AI_MODEL="gemini-3.8-flash";
 function hasAI(){return !!(S.aiKey&&S.aiKey.trim());}
 async function aiCall(parts){
   if(!hasAI())throw new Error("설정에서 Gemini API 키를 먼저 넣어 주세요.");
@@ -757,8 +758,13 @@ async function aiCall(parts){
     });
   }catch(e){throw new Error("AI 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.");}
   if(!r.ok){
-    let msg=r.status===400?"API 키가 올바르지 않거나 요청에 문제가 있어요.":`AI 호출에 실패했어요 (${r.status})`;
-    try{const j=await r.json();if(j&&j.error&&j.error.message)msg=j.error.message;}catch(e){}
+    let msg=`AI 호출에 실패했어요 (${r.status})`;
+    let raw="";try{raw=await r.text();}catch(e){}
+    try{
+      const j=JSON.parse(raw);
+      const m=(j&&j.error&&j.error.message)||(Array.isArray(j)&&j[0]&&j[0].error&&j[0].error.message);
+      if(m)msg+=`: ${m}`;
+    }catch(e){if(raw)msg+=`: ${raw.slice(0,200)}`;}
     throw new Error(msg);
   }
   const j=await r.json();
@@ -774,7 +780,7 @@ async function aiCall(parts){
 }
 async function extractItemInfo(mimeType,base64){
   const parts=[
-    {type:"text",text:`오늘 날짜는 ${iso(today())}야. 이 식품 포장지·라벨 사진에서 알 수 있는 정보를 뽑아서 아래 JSON 형식으로만 답해(설명 문장이나 마크다운 코드블록 없이 JSON만 출력):\n{"name":"품목명(짧은 한글 이름)","cat":"분류 한 단어(예: 채소,고기,수산물,조미료,곡류,유제품,가공식품,과일,냉동식품,간식,기타)","exp":"YYYY-MM-DD 형식의 소비기한. '제조일로부터 N개월' 같은 표현이면 오늘 날짜 기준으로 계산해서 적어. 전혀 모르면 빈 문자열","cal":"100g당 칼로리 숫자(kcal) 또는 모르면 빈 문자열","protein":"100g당 단백질 숫자(g) 또는 모르면 빈 문자열"}`},
+    {type:"text",text:`오늘 날짜는 ${iso(today())}야. 이 식품 포장지·라벨 사진에서 알 수 있는 정보를 뽑아서 아래 JSON 형식으로만 답해(설명 문장이나 마크다운 코드블록 없이 JSON만 출력):\n{"name":"품목명(짧은 한글 이름)","cat":"분류 한 단어(예: 채소,고기,수산물,조미료,곡류,유제품,가공식품,과일,냉동식품,간식,기타)","exp":"YYYY-MM-DD 형식의 소비기한. '제조일로부터 N개월' 같은 표현이면 오늘 날짜 기준으로 계산해서 적어. 전혀 모르면 빈 문자열","cal":"100g당 칼로리 숫자(kcal) 또는 모르면 빈 문자열","protein":"100g당 단백질 숫자(g) 또는 모르면 빈 문자열","health":"라벨의 원재료·성분표가 보이면 그걸 바탕으로, 안 보이면 이 식품에 대해 일반적으로 알려진 사실로, 주요 성분과 건강에 좋은 점·주의할 점을 2~3문장으로 짧고 과장 없이. 둘 다 전혀 모르면 빈 문자열"}`},
     {type:"image",data:base64,mime_type:mimeType}
   ];
   return await aiCall(parts);
@@ -956,7 +962,7 @@ function openItem(id,preset){
   $("f-exp").value=it.exp||"";$("f-opened").value=it.opened||"";
   $("f-noexp").checked=!!id&&!it.exp;$("f-exp").disabled=$("f-noexp").checked;
   $("f-est").checked=!!it.est;$("f-note").value=it.note||"";
-  $("f-cal").value=it.cal||"";$("f-protein").value=it.protein||"";
+  $("f-cal").value=it.cal||"";$("f-protein").value=it.protein||"";$("f-health").value=it.health||"";
   $("used-box").hidden=!id;$("btn-del").hidden=!id;$("f-toshop").checked=true;
   $("cat-list").innerHTML=[...new Set(data.items.map(i=>i.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ko")).map(c=>`<option value="${esc(c)}"></option>`).join("");
   $("ai-fill-row").hidden=!hasAI();$("ai-fill-status").textContent="";
@@ -979,6 +985,7 @@ $("ai-fill-input").addEventListener("change",async e=>{
     if(j.exp&&/^\d{4}-\d{2}-\d{2}$/.test(j.exp)){$("f-noexp").checked=false;$("f-exp").disabled=false;$("f-exp").value=j.exp;}
     if(j.cal!=null&&j.cal!=="")$("f-cal").value=j.cal;
     if(j.protein!=null&&j.protein!=="")$("f-protein").value=j.protein;
+    if(j.health)$("f-health").value=j.health;
     st.textContent="채워 넣었어요. 확인하고 저장해 주세요.";
   }catch(err){st.textContent=err.message||"분석에 실패했어요";}
   finally{$("btn-ai-fill").disabled=false;e.target.value="";}
@@ -987,7 +994,7 @@ $("item-form").addEventListener("submit",e=>{
   e.preventDefault();
   const name=$("f-name").value.trim();if(!name)return;
   const zone=(document.querySelector('input[name="zone"]:checked')||{}).value||"";
-  const f={name,cat:$("f-cat").value.trim(),qty:$("f-qty").value.trim(),zone,exp:$("f-noexp").checked?"":$("f-exp").value,opened:$("f-opened").value,est:$("f-est").checked,note:$("f-note").value.trim(),cal:$("f-cal").value.trim(),protein:$("f-protein").value.trim()};
+  const f={name,cat:$("f-cat").value.trim(),qty:$("f-qty").value.trim(),zone,exp:$("f-noexp").checked?"":$("f-exp").value,opened:$("f-opened").value,est:$("f-est").checked,note:$("f-note").value.trim(),cal:$("f-cal").value.trim(),protein:$("f-protein").value.trim(),health:$("f-health").value.trim()};
   $("dlg-item").close();
   if(editId){commit([OP.update("items",editId,f)],"수정했어요",[INV.update("items",editId,f)]);}
   else{
