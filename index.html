@@ -742,7 +742,7 @@ function loadPhoto(path){
 }
 
 /* ===== AI (Gemini) ===== */
-const AI_MODEL="gemini-3.8-flash";
+const AI_MODEL="gemini-3.6-flash";
 function hasAI(){return !!(S.aiKey&&S.aiKey.trim());}
 async function aiCall(parts){
   if(!hasAI())throw new Error("설정에서 Gemini API 키를 먼저 넣어 주세요.");
